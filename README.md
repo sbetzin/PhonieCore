@@ -21,12 +21,12 @@ Inspired by the [Phoniebox project](http://phoniebox.de)
 ```
 sudo apt update
 sudo apt upgrade
+sudo apt-get install git nano samba avahi-daemon
 ```
 
 ### Samba shares
 ```
-sudo mkdir /opt/phoniecore
-sudo apt-get install samba
+mkdir -p ~/phoniecore
 sudo nano /etc/samba/smb.conf
 ```
 Add these lines at the bottom to get two open shares for the executable and the media:
@@ -38,7 +38,7 @@ writable = yes
 guest ok = yes
 
 [core]
-path = /opt/phoniecore
+path = /phoniecore/
 public = yes
 writable = yes
 guests ok = yes
@@ -46,7 +46,6 @@ guests ok = yes
 
 ### Zeroconf (use hostname for connections) 
 ```
-sudo apt-get install avahi-daemon
 sudo nano /etc/hostname
 ```
 
