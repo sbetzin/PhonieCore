@@ -76,7 +76,9 @@ client_secret = ...
 ### Audio HAT Driver
 ```
 git clone https://github.com/waveshare/WM8960-Audio-HAT
-./install.sh sudo reboot
+cd WM8960-Audio-HAT
+sudo ./install.sh 
+sudo reboot
 ```
 
 ### .Net Core 8
