@@ -6,18 +6,11 @@ using Microsoft.Extensions.Logging;
 
 namespace PhonieCore
 {
-    public class PhonieWorker : BackgroundService
+    public class PhonieWorker(ILogger<PhonieWorker> logger) : BackgroundService
     {
-        private readonly ILogger<PhonieWorker> _logger;
-
-        public PhonieWorker(ILogger<PhonieWorker> logger)
-        {
-            _logger = logger;
-        }
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation($"Worker running at: {DateTime.Now}");
+            logger.LogInformation($"Worker running at: {DateTime.Now}");
             await Task.Factory.StartNew(x => { new Radio(); }, new object(), stoppingToken);
         }
     }

@@ -16,7 +16,7 @@ namespace PhonieCore
         private string SetCurrentDirectoryStar(string id)
         {
             Console.WriteLine("SetCurrentDirectoryStar");
-            foreach (string directory in Directory.EnumerateDirectories(MediaDirectory))
+            foreach (var directory in Directory.EnumerateDirectories(MediaDirectory))
             {
                 if (directory.EndsWith(Marker))
                 {
@@ -24,7 +24,7 @@ namespace PhonieCore
                 }
             }
 
-            string newDirectoryName = MediaDirectory + id + Marker;
+            var newDirectoryName = MediaDirectory + id + Marker;
             Console.WriteLine("New directory name: " + newDirectoryName);
             if (Directory.Exists(MediaDirectory + id))
             {

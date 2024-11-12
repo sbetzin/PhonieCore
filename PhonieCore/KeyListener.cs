@@ -13,7 +13,7 @@ namespace PhonieCore
         public delegate void KeyReleasedHandler(int key);
         public event KeyReleasedHandler OnKeyReleased;
 
-        Dictionary<BcmPin, bool> buttonState;
+        Dictionary<BcmPin, bool> _buttonState;
 
         public KeyListener()
         {
@@ -22,22 +22,22 @@ namespace PhonieCore
 
         public void WatchKeys()
         {
-            buttonState = new Dictionary<BcmPin, bool>();
+            _buttonState = new Dictionary<BcmPin, bool>();
             InitGpio(BcmPin.Gpio26);
-            buttonState.Add(BcmPin.Gpio26, false);
+            _buttonState.Add(BcmPin.Gpio26, false);
             InitGpio(BcmPin.Gpio06);
-            buttonState.Add(BcmPin.Gpio06, false);
+            _buttonState.Add(BcmPin.Gpio06, false);
             InitGpio(BcmPin.Gpio05);
-            buttonState.Add(BcmPin.Gpio05, false);
+            _buttonState.Add(BcmPin.Gpio05, false);
             InitGpio(BcmPin.Gpio16);
-            buttonState.Add(BcmPin.Gpio16, false);
+            _buttonState.Add(BcmPin.Gpio16, false);
 
             while (true)
             {
                 Thread.Sleep(100);
-                foreach (BcmPin pin in buttonState.Keys)
+                foreach (var pin in _buttonState.Keys)
                 {
-                    CheckButton(pin, buttonState); 
+                    CheckButton(pin, _buttonState); 
                 }
             }
         }  
@@ -47,12 +47,12 @@ namespace PhonieCore
             if (!Pi.Gpio[pin].Read() && !buttonState[pin])
             {
                 buttonState[pin] = true;
-                OnKeyPressed.Invoke((int)pin);
+                OnKeyPressed?.Invoke((int)pin);
             }
 
             if (Pi.Gpio[pin].Read() && buttonState[pin])
             {
-                OnKeyReleased.Invoke((int)pin);
+                OnKeyReleased?.Invoke((int)pin);
                 buttonState[pin] = false;
             }
         }

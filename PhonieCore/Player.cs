@@ -8,26 +8,26 @@ namespace PhonieCore
     public class Player
     {
         private readonly Library _library;
-        private Mopidy.Client _mopidyClient;
+        private readonly Mopidy.Client _mopidyClient;
 
         private const string StopFile = "STOP";
         private const string PauseFile = "PAUSE";
         private const string PlayFile = "PLAY";
         private const string SpotifyFile = "SPOTIFY";
 
-        private int volume = 50;
+        private int _volume = 50;
 
         public Player()
         {
             _library = new Library();
             _mopidyClient = new Mopidy.Client();
 
-            SetVolume(volume);
+            SetVolume(_volume);
         }
 
         public void ProcessFolder(string uid)
         {
-            string folder = _library.GetFolderForId(uid);
+            var folder = _library.GetFolderForId(uid);
             var files = Directory.EnumerateFiles(folder).ToArray();
 
             foreach (string file in files)
@@ -84,31 +84,31 @@ namespace PhonieCore
 
         public void IncreaseVolume()
         {
-            if (volume <= 95)
+            if (_volume <= 95)
             {
-                volume += 5;
+                _volume += 5;
             }
-            _mopidyClient.SetVolume(volume);
+            _mopidyClient.SetVolume(_volume);
         }
 
         public void DecreaseVolume()
         {
-            if (volume >= 5)
+            if (_volume >= 5)
             {
-                volume -= 5;
+                _volume -= 5;
             }
-            _mopidyClient.SetVolume(volume);
+            _mopidyClient.SetVolume(_volume);
         }
 
-        private void Play(IEnumerable<string> files)
+        private void Play(string[] files)
         {
-            string arguments = string.Join(" ", files);
+            var arguments = string.Join(" ", files);
             Console.WriteLine("Play files: " + arguments);
 
             Stop();
 
             _mopidyClient.ClearTracks();
-            foreach (string file in files)
+            foreach (var file in files)
             {
                 _mopidyClient.AddTrack("file://" + file);
             }
