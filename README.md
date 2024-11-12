@@ -25,6 +25,7 @@ sudo apt upgrade
 
 ### Samba shares
 ```
+sudo mkdir /opt/phoniecore
 sudo apt-get install samba
 sudo nano /etc/samba/smb.conf
 ```
@@ -79,14 +80,13 @@ git clone https://github.com/waveshare/WM8960-Audio-HAT
 ./install.sh sudo reboot
 ```
 
-### .Net Core
+### .Net Core 8
 ```
-wget https://dotnet.microsoft.com/download/dotnet/thank-you/runtime-5.0.0-linux-arm32-binaries
-sudo mkdir -p /usr/share/dotnet
-sudo tar -zxf dotnet-sdk-latest-linux-arm.tar.gz -C /usr/share/dotnet
-sudo ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet
-export DOTNET_ROOT=$HOME/dotnet-arm32
-export PATH=$PATH:$HOME/dotnet-arm32
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --version latest --verbose
+echo 'export DOTNET_ROOT=$HOME/.dotnet' >> ~/.bashrc
+echo 'export PATH=$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools' >> ~/.bashrc
+source ~/.bashrc
+dotnet --version
 ```
 
 ### PhonieCore
