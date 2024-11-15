@@ -2,7 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <Platforms>AnyCPU;ARM64</Platforms>
+    <Platforms>AnyCPU;ARM64;ARM32</Platforms>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="HidSharpCore" Version="1.3.0" />

@@ -15,7 +15,7 @@ namespace PhonieCore
         private const string PlayFile = "PLAY";
         private const string SpotifyFile = "SPOTIFY";
 
-        private int _volume = 50;
+        private int _volume = 80;
 
         public Player()
         {
@@ -79,6 +79,7 @@ namespace PhonieCore
 
         private void SetVolume(int volume)
         {
+            Console.WriteLine($"set volumen {volume}");
             _mopidyClient.SetVolume(volume);
         }
 
@@ -100,7 +101,7 @@ namespace PhonieCore
             _mopidyClient.SetVolume(_volume);
         }
 
-        private void Play(string[] files)
+        public  void Play(string[] files)
         {
             var arguments = string.Join(" ", files);
             Console.WriteLine("Play files: " + arguments);

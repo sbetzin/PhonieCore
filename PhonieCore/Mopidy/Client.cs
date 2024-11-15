@@ -2,6 +2,7 @@
 using System;
 using System.Net.Http;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 // https://docs.mopidy.com/en/latest/api/core/#playback-controller
 
@@ -10,46 +11,50 @@ namespace PhonieCore.Mopidy
     public class Client : IDisposable
     {
         private const string MopidyUrl = "http://localhost:6680/mopidy/rpc";
-        private HttpClient httpClient;
-        private bool disposedValue;
+        private readonly HttpClient _httpClient = new();
+        private bool _disposedValue;
 
-        public Client()
-        {
-            httpClient = new HttpClient();
-        }
-
-        private void Call(string method, Dictionary<string, object[]> parameters)
+        private async Task Call(string method, Dictionary<string, object[]> parameters)
         {
             var request = new MultiParamRequest(method, parameters);
-            Fire(request);
+            await Fire(request);
         }
 
-        private void Call(string method, Dictionary<string, object> parameters)
+        private async Task Call(string method, Dictionary<string, object> parameters)
         {
             var request = new SingleParamRequest(method, parameters);
-            Fire(request);
+            await Fire(request);
         }
 
-        private void Call(string method)
+        private async Task Call(string method)
         {
             var request = new SingleParamRequest(method, null);
-            Fire(request);
+            await Fire(request);
         }
 
-        private async void Fire(Request request)
+        private async Task Fire(Request request)
         {
-            JsonSerializerSettings setting = new JsonSerializerSettings();
-            setting.NullValueHandling = NullValueHandling.Ignore;
+            var setting = new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            };
 
-            string json = JsonConvert.SerializeObject(request, setting);
+            var json = JsonConvert.SerializeObject(request, setting);
             Console.WriteLine(json);
             var httpContent = new StringContent(json, null, "application/json");
-            httpContent.Headers.ContentType.CharSet = "";
+            if (httpContent.Headers.ContentType != null) httpContent.Headers.ContentType.CharSet = "";
 
             try
             {
-                var result = await httpClient.PostAsync(MopidyUrl, httpContent);
-                Console.WriteLine(result.StatusCode + ", ", result.Content);
+                var response = await _httpClient.PostAsync(MopidyUrl, httpContent);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+                Console.WriteLine($"Response: {response.StatusCode}, {responseString}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine("Error: Mopidy request failed.");
+                }
             }
             catch(HttpRequestException e)
             {
@@ -57,62 +62,61 @@ namespace PhonieCore.Mopidy
             }            
         }
 
-        public void Stop()
+        public async Task Stop()
         {
-            Call("playback.stop");
+            await Call("playback.stop");
         }
 
-        public void Pause()
+        public async Task Pause()
         {
-            Call("playback.pause");
+            await Call("playback.pause");
         }
 
-        public void Play()
+        public async Task Play()
         {
-            Call("playback.play");
+            await Call("playback.play");
         }
 
-        public void Next()
+        public async Task Next()
         {
-            Call("playback.next");
+            await Call("playback.next");
         }
 
-        public void Previous()
+        public async Task Previous()
         {
-            Call("playback.previous");
+            await Call("playback.previous");
         }
 
-        public void Seek(int sec)
+        public async Task Seek(int sec)
         {
-            Call("playback.seek", new Dictionary<string, object> { { "time_position", sec * 1000 } });
+            await Call("playback.seek", new Dictionary<string, object> { { "time_position", sec * 1000 } });
         }
 
-        public void SetVolume(int volume)
+        public async Task SetVolume(int volume)
         {
-            Call("mixer.set_volume", new Dictionary<string, object> { { "volume",  volume } });
+            await Call("mixer.set_volume", new Dictionary<string, object> { { "volume",  volume } });
         }
 
-        public void AddTrack(string uri)
+        public async Task AddTrack(string uri)
         {
-            Call("tracklist.add", new Dictionary<string, object[]> { { "uris", new object[] { uri } } });
+            await Call("tracklist.add", new Dictionary<string, object[]> { { "uris", new object[] { uri } } });
         }
 
-        public void ClearTracks()
+        public async Task ClearTracks()
         {
-            Call("tracklist.clear");
+            await Call("tracklist.clear");
         }
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
-            {
-                if (disposing)
-                {
-                    httpClient.Dispose();
-                }
+            if (_disposedValue) return;
 
-                disposedValue = true;
+            if (disposing)
+            {
+                _httpClient.Dispose();
             }
+
+            _disposedValue = true;
         }
 
         public void Dispose()

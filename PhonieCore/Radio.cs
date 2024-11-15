@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.WebSockets;
 
 namespace PhonieCore
 {
@@ -16,9 +17,15 @@ namespace PhonieCore
             //keyListener.OnKeyPressed += HandleKeyPressed;
             //keyListener.OnKeyReleased += HandleKeyReleased;
 
-            RfidReader.WaitForCard();
+            Console.WriteLine("Playing test");
+            var file = new string[] { "/media/test.mp3" };
+            _player.Play(file);
+
+            //RfidReader.WaitForCard();
             //rfid.CardDetected += HandleCardDetected;
             //rfid.NewCardDetected += HandleNewCardDetected;
+
+
         }
 
         private void HandleCardDetected(string uid)
