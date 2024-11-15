@@ -26,8 +26,14 @@ sudo apt-get install git nano samba avahi-daemon
 
 ### Samba shares
 ```
-mkdir -p ~/phoniecore
+sudo mkdir -p /srv/phoniecore
+sudo chown -R nobody:nogroup /srv/phoniecore
+sudo chmod -R 775 /srv/phoniecore
+
 sudo nano /etc/samba/smb.conf
+
+sudo systemctl restart smbd
+
 ```
 Add these lines at the bottom to get two open shares for the executable and the media:
 ```
@@ -37,11 +43,15 @@ public = yes
 writable = yes
 guest ok = yes
 
-[core]
-path = /phoniecore/
-public = yes
-writable = yes
-guests ok = yes
+[phoniecore]
+path = /srv/phoniecore
+browseable = yes
+read only = no
+guest ok = yes
+create mask = 0775
+directory mask = 0775
+force user = nobody
+
 ```
 
 ### Zeroconf (use hostname for connections) 

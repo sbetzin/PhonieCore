@@ -1,5 +1,4 @@
 ﻿using System;
-using Unosquare.WiringPi;
 
 namespace PhonieCore
 {
@@ -9,17 +8,17 @@ namespace PhonieCore
 
         public Radio()
         {
-            Unosquare.RaspberryIO.Pi.Init<BootstrapWiringPi>();
+            //Unosquare.RaspberryIO.Pi.Init<BootstrapWiringPi>();
 
             _player = new Player();
 
-            var keyListener = new KeyListener();
-            keyListener.OnKeyPressed += HandleKeyPressed;
-            keyListener.OnKeyReleased += HandleKeyReleased;
+            //var keyListener = new KeyListener();
+            //keyListener.OnKeyPressed += HandleKeyPressed;
+            //keyListener.OnKeyReleased += HandleKeyReleased;
 
-            var rfid = new Rfid();
-            rfid.CardDetected += HandleCardDetected;
-            rfid.NewCardDetected += HandleNewCardDetected;
+            RfidReader.WaitForCard();
+            //rfid.CardDetected += HandleCardDetected;
+            //rfid.NewCardDetected += HandleNewCardDetected;
         }
 
         private void HandleCardDetected(string uid)
