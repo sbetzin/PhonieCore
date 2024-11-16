@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PhonieCore
 {
@@ -22,123 +23,130 @@ namespace PhonieCore
             _library = new Library();
             _mopidyClient = new Mopidy.Client();
 
-            SetVolume(_volume);
+            SetVolume(_volume).Wait();
         }
 
-        public void ProcessFolder(string uid)
+        public async Task ProcessFolder(string uid)
         {
             var folder = _library.GetFolderForId(uid);
             var files = Directory.EnumerateFiles(folder).ToArray();
 
-            foreach (string file in files)
+            foreach (var file in files)
             {
                 Console.WriteLine(file);
             }
 
             if (files.Any(f => f.Contains(StopFile)))
             {
-                Stop();
+                await Stop();
             }
             else if (files.Any(f => f.Contains(PlayFile)))
             {
-                Play();
+                await Play();
             }
             else if (files.Any(f => f.Contains(PauseFile)))
             {
-                Pause();
+                await Pause();
             }
             else if (files.Any(f => f.Contains(SpotifyFile)))
             {
-                PlaySpotify(File.ReadAllText(files.FirstOrDefault()));
+                if (files.Length == 0)
+                {
+                    return;
+                }
+
+                var file = files.First();
+                var url = await File.ReadAllTextAsync(file);
+                await PlaySpotify(url);
             }
-            else if(files.Any(f => f.EndsWith("mp3")))
+            else if (files.Any(f => f.EndsWith("mp3")))
             {
-                Play(files);
+                await Play(files);
             }
         }
 
-        public void Play()
+        public async Task Play()
         {
-            _mopidyClient.Play();
+            await _mopidyClient.Play();
         }
 
-        public void Next()
+        public async Task Next()
         {
-            _mopidyClient.Next();
+            await _mopidyClient.Next();
         }
 
-        public void Previous()
+        public async Task Previous()
         {
-            _mopidyClient.Previous();
+            await _mopidyClient.Previous();
         }
 
-        public void Seek(int sec)
+        public async Task Seek(int sec)
         {
-            _mopidyClient.Seek(sec);
+            await _mopidyClient.Seek(sec);
         }
 
-        private void SetVolume(int volume)
+        private async Task SetVolume(int volume)
         {
             Console.WriteLine($"set volumen {volume}");
-            _mopidyClient.SetVolume(volume);
+            await _mopidyClient.SetVolume(volume);
         }
 
-        public void IncreaseVolume()
+        public async Task IncreaseVolume()
         {
             if (_volume <= 95)
             {
                 _volume += 5;
             }
-            _mopidyClient.SetVolume(_volume);
+            await _mopidyClient.SetVolume(_volume);
         }
 
-        public void DecreaseVolume()
+        public async Task DecreaseVolume()
         {
             if (_volume >= 5)
             {
                 _volume -= 5;
             }
-            _mopidyClient.SetVolume(_volume);
+            await _mopidyClient.SetVolume(_volume);
         }
 
-        public  void Play(string[] files)
+        public async Task Play(string[] files)
         {
             var arguments = string.Join(" ", files);
             Console.WriteLine("Play files: " + arguments);
 
-            Stop();
+            await Stop();
 
-            _mopidyClient.ClearTracks();
+            await _mopidyClient.ClearTracks();
             foreach (var file in files)
             {
-                _mopidyClient.AddTrack("file://" + file);
+                await _mopidyClient.AddTrack("file://" + file);
             }
 
-            _mopidyClient.Play();                       
+            await _mopidyClient.Play();
         }
 
-        private void PlaySpotify(string uri)
+        private async Task PlaySpotify(string uri)
         {
             Console.WriteLine("Play Spotify: " + uri);
 
-            Stop();
+            await Stop();
 
-            _mopidyClient.ClearTracks();            
-             _mopidyClient.AddTrack(uri);            
+            await _mopidyClient.ClearTracks();
+            await _mopidyClient.AddTrack(uri);
 
-            _mopidyClient.Play();
+            await _mopidyClient.Play();
         }
 
-        public void Stop()
+        public async Task Stop()
         {
             Console.WriteLine("Stop");
-            _mopidyClient.Stop();            
+            await _mopidyClient.Stop();
         }
 
-        public void Pause()
+        public async Task Pause()
         {
             Console.WriteLine("Pause");
-            _mopidyClient.Pause();            
-        }       
+            await _mopidyClient.Pause();
+        }
     }
 }
