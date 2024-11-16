@@ -1,17 +1,31 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using PhonieCore.Logging;
 
 namespace PhonieCore
 {
     public class PhonieWorker(ILogger<PhonieWorker> logger) : BackgroundService
     {
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        private readonly ILogger<PhonieWorker> _logger = logger;
+
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            logger.LogInformation($"Worker running at: {DateTime.Now}");
-            await Task.Factory.StartNew(x => { new Radio(); }, new object(), stoppingToken);
+            Logger.SetLogger(logger);
+
+            cancellationToken.Register(() =>
+            {
+                _logger.LogInformation("Cancel requested");
+            });
+
+            await Task.Factory.StartNew(x =>
+            {
+                Radio.Start(cancellationToken);
+
+            }, new object(), cancellationToken);
+
+            _logger.LogInformation("PhonieWorker is running...");
         }
     }
 }

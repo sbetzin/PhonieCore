@@ -1,23 +1,25 @@
-﻿using System;
+﻿using System.Threading;
+using PhonieCore.Logging;
 
 namespace PhonieCore
 {
-    public class Radio
+    public static class Radio
     {
-        private readonly Player _player;
 
-        public Radio()
+        public static void Start(CancellationToken cancellationToken)
         {
-            _player = new Player();
-
             RfidReader.NewCardDetected += NewCardDetected;
-            RfidReader.DetectCards();
+
+            Player.SetVolume(80).Wait(cancellationToken);
+
+            RfidReader.DetectCards(cancellationToken);
         }
 
-        private void NewCardDetected(string uid)
+        private static void NewCardDetected(string uid)
         {
-            Console.WriteLine($"New card: " + uid);
-            _player.ProcessFolder(uid).Wait();
+            Logger.Log($"new card detected: {uid}");
+
+            Player.ProcessFolder(uid).Wait();
 
         }
     }

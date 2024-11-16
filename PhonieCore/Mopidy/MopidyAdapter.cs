@@ -3,6 +3,7 @@ using System;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PhonieCore.Logging;
 
 // https://docs.mopidy.com/en/latest/api/core/#playback-controller
 
@@ -40,7 +41,7 @@ namespace PhonieCore.Mopidy
             };
 
             var json = JsonConvert.SerializeObject(request, setting);
-            Console.WriteLine(json);
+
             var httpContent = new StringContent(json, null, "application/json");
             if (httpContent.Headers.ContentType != null) httpContent.Headers.ContentType.CharSet = "";
 
@@ -51,13 +52,13 @@ namespace PhonieCore.Mopidy
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("Error: Mopidy request failed.");
-                    Console.WriteLine($"Response: {response.StatusCode}, {responseString}");
+                    Logger.Log("Error: Mopidy request failed.");
+                    Logger.Log($"Response: {response.StatusCode}, {responseString}");
                 }
             }
             catch(HttpRequestException e)
             {
-                Console.WriteLine(e.Message);
+                Logger.Error(e);
             }            
         }
 

@@ -1,54 +1,42 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using PhonieCore.Logging;
+using PhonieCore.Mopidy;
 
 namespace PhonieCore
 {
-    public class Player
+    public static class Player
     {
-        private readonly Library _library;
-        private readonly Mopidy.MopidyAdapter _mopidyMopidyAdapter;
+        private static readonly MopidyAdapter MopidyAdapter = new();
+        private static int _volume = 80;
 
-        private const string StopFile = "STOP";
-        private const string PauseFile = "PAUSE";
-        private const string PlayFile = "PLAY";
-        private const string SpotifyFile = "SPOTIFY";
-
-        private int _volume = 80;
-
-        public Player()
+        public static async Task ProcessFolder(string uid)
         {
-            _library = new Library();
-            _mopidyMopidyAdapter = new Mopidy.MopidyAdapter();
-
-            SetVolume(_volume).Wait();
-        }
-
-        public async Task ProcessFolder(string uid)
-        {
-            var folder = _library.GetFolderForId(uid);
+            var folder = MediaAdapter.GetFolderForId(uid);
             var files = Directory.EnumerateFiles(folder).ToArray();
 
-            foreach (var file in files)
-            {
-                Console.WriteLine(file);
-            }
-
-            if (files.Any(f => f.Contains(StopFile)))
+            if (files.Any(f => f.Contains("STOP")))
             {
                 await Stop();
             }
-            else if (files.Any(f => f.Contains(PlayFile)))
+            else if (files.Any(f => f.Contains("PLAY")))
             {
                 await Play();
             }
-            else if (files.Any(f => f.Contains(PauseFile)))
+            else if (files.Any(f => f.Contains("PAUSE")))
             {
                 await Pause();
             }
-            else if (files.Any(f => f.Contains(SpotifyFile)))
+            else if (files.Any(f => f.Contains("INCREASE_VOLUME")))
+            {
+                await IncreaseVolume();
+            }
+            else if (files.Any(f => f.Contains("DECREASE_VOLUME")))
+            {
+                await DecreaseVolume();
+            }
+            else if (files.Any(f => f.Contains("SPOTIFY")))
             {
                 if (files.Length == 0)
                 {
@@ -65,88 +53,84 @@ namespace PhonieCore
             }
         }
 
-        public async Task Play()
+        public static async Task Play()
         {
-            await _mopidyMopidyAdapter.Play();
+            await MopidyAdapter.Play();
         }
 
-        public async Task Next()
+        public static async Task Next()
         {
-            await _mopidyMopidyAdapter.Next();
+            await MopidyAdapter.Next();
         }
 
-        public async Task Previous()
+        public static async Task Previous()
         {
-            await _mopidyMopidyAdapter.Previous();
+            await MopidyAdapter.Previous();
         }
 
-        public async Task Seek(int sec)
+        public static async Task Seek(int sec)
         {
-            await _mopidyMopidyAdapter.Seek(sec);
+            await MopidyAdapter.Seek(sec);
         }
 
-        private async Task SetVolume(int volume)
+        public static async Task SetVolume(int volume)
         {
-            Console.WriteLine($"set volumen {volume}");
-            await _mopidyMopidyAdapter.SetVolume(volume);
+            Logger.Log($"set volumen {volume}");
+            await MopidyAdapter.SetVolume(volume);
         }
 
-        public async Task IncreaseVolume()
+        public static async Task IncreaseVolume()
         {
             if (_volume <= 95)
             {
                 _volume += 5;
             }
-            await _mopidyMopidyAdapter.SetVolume(_volume);
+            await SetVolume(_volume);
         }
 
-        public async Task DecreaseVolume()
+        public static async Task DecreaseVolume()
         {
             if (_volume >= 5)
             {
                 _volume -= 5;
             }
-            await _mopidyMopidyAdapter.SetVolume(_volume);
+            await SetVolume(_volume);
         }
 
-        public async Task Play(string[] files)
+        public static async Task Play(string[] files)
         {
-            var arguments = string.Join(" ", files);
-            Console.WriteLine("Play files: " + arguments);
+            var filesString = string.Join(" ", files);
+            Logger.Log("Play files: " + filesString);
 
-            await Stop();
-
-            await _mopidyMopidyAdapter.ClearTracks();
+            await MopidyAdapter.Stop();
+            await MopidyAdapter.ClearTracks();
             foreach (var file in files)
             {
-                await _mopidyMopidyAdapter.AddTrack("file://" + file);
+                await MopidyAdapter.AddTrack("file://" + file);
             }
-
-            await _mopidyMopidyAdapter.Play();
+            await MopidyAdapter.Play();
         }
 
-        private async Task PlaySpotify(string uri)
+        private static async Task PlaySpotify(string uri)
         {
-            Console.WriteLine("Play Spotify: " + uri);
-
-            await Stop();
-
-            await _mopidyMopidyAdapter.ClearTracks();
-            await _mopidyMopidyAdapter.AddTrack(uri);
-
-            await _mopidyMopidyAdapter.Play();
+            Logger.Log("Play Spotify: " + uri);
+                
+            await MopidyAdapter.Stop();
+            await MopidyAdapter.ClearTracks();
+            await MopidyAdapter.AddTrack(uri);
+            await MopidyAdapter.Play();
         }
 
-        public async Task Stop()
+        public static async Task Stop()
         {
-            Console.WriteLine("Stop");
-            await _mopidyMopidyAdapter.Stop();
+            Logger.Log("Stop");
+            await MopidyAdapter.Stop();
         }
 
-        public async Task Pause()
+        public static async Task Pause()
         {
-            Console.WriteLine("Pause");
-            await _mopidyMopidyAdapter.Pause();
+            Logger.Log("Pause");
+            await MopidyAdapter.Pause();
         }
     }
 }

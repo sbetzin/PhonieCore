@@ -3,6 +3,7 @@ using System.Device.Gpio;
 using System.Device.Spi;
 using System.Threading;
 using Iot.Device.Mfrc522;
+using PhonieCore.Logging;
 
 namespace PhonieCore
 {
@@ -13,8 +14,10 @@ namespace PhonieCore
         public static event Action<string> NewCardDetected;
         private static string _currentId = string.Empty;
 
-        public static void DetectCards()
+        public static void DetectCards(CancellationToken cancellationToken)
         {
+            Logger.Log("Starting NFC Reader");
+
             using var gpioController = new GpioController();
             var pinReset = 22;
 
@@ -26,15 +29,17 @@ namespace PhonieCore
             using var spi = SpiDevice.Create(connection);
             MfRc522 mfrc522 = new(spi, pinReset, gpioController, false);
 
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 mfrc522.DetectCard();
             }
+
+            Logger.Log("Stopping NFC Reader");
         }
 
         private static void DetectCard(this MfRc522 mfrc522)
         {
-            var res = mfrc522.ListenToCardIso14443TypeA(out var card, TimeSpan.FromSeconds(2));
+            var res = mfrc522.ListenToCardIso14443TypeA(out var card, TimeSpan.FromMilliseconds(500));
             if (!res)
             {
                 return;
@@ -49,7 +54,7 @@ namespace PhonieCore
             _currentId = id;
             OnNewCardFound(id);
 
-            Thread.Sleep(1000);
+            Thread.Sleep(500);
         }
 
         private static void OnNewCardFound(string id)
