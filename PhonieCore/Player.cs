@@ -9,7 +9,7 @@ namespace PhonieCore
     public class Player
     {
         private readonly Library _library;
-        private readonly Mopidy.Client _mopidyClient;
+        private readonly Mopidy.MopidyAdapter _mopidyMopidyAdapter;
 
         private const string StopFile = "STOP";
         private const string PauseFile = "PAUSE";
@@ -21,7 +21,7 @@ namespace PhonieCore
         public Player()
         {
             _library = new Library();
-            _mopidyClient = new Mopidy.Client();
+            _mopidyMopidyAdapter = new Mopidy.MopidyAdapter();
 
             SetVolume(_volume).Wait();
         }
@@ -67,28 +67,28 @@ namespace PhonieCore
 
         public async Task Play()
         {
-            await _mopidyClient.Play();
+            await _mopidyMopidyAdapter.Play();
         }
 
         public async Task Next()
         {
-            await _mopidyClient.Next();
+            await _mopidyMopidyAdapter.Next();
         }
 
         public async Task Previous()
         {
-            await _mopidyClient.Previous();
+            await _mopidyMopidyAdapter.Previous();
         }
 
         public async Task Seek(int sec)
         {
-            await _mopidyClient.Seek(sec);
+            await _mopidyMopidyAdapter.Seek(sec);
         }
 
         private async Task SetVolume(int volume)
         {
             Console.WriteLine($"set volumen {volume}");
-            await _mopidyClient.SetVolume(volume);
+            await _mopidyMopidyAdapter.SetVolume(volume);
         }
 
         public async Task IncreaseVolume()
@@ -97,7 +97,7 @@ namespace PhonieCore
             {
                 _volume += 5;
             }
-            await _mopidyClient.SetVolume(_volume);
+            await _mopidyMopidyAdapter.SetVolume(_volume);
         }
 
         public async Task DecreaseVolume()
@@ -106,7 +106,7 @@ namespace PhonieCore
             {
                 _volume -= 5;
             }
-            await _mopidyClient.SetVolume(_volume);
+            await _mopidyMopidyAdapter.SetVolume(_volume);
         }
 
         public async Task Play(string[] files)
@@ -116,13 +116,13 @@ namespace PhonieCore
 
             await Stop();
 
-            await _mopidyClient.ClearTracks();
+            await _mopidyMopidyAdapter.ClearTracks();
             foreach (var file in files)
             {
-                await _mopidyClient.AddTrack("file://" + file);
+                await _mopidyMopidyAdapter.AddTrack("file://" + file);
             }
 
-            await _mopidyClient.Play();
+            await _mopidyMopidyAdapter.Play();
         }
 
         private async Task PlaySpotify(string uri)
@@ -131,22 +131,22 @@ namespace PhonieCore
 
             await Stop();
 
-            await _mopidyClient.ClearTracks();
-            await _mopidyClient.AddTrack(uri);
+            await _mopidyMopidyAdapter.ClearTracks();
+            await _mopidyMopidyAdapter.AddTrack(uri);
 
-            await _mopidyClient.Play();
+            await _mopidyMopidyAdapter.Play();
         }
 
         public async Task Stop()
         {
             Console.WriteLine("Stop");
-            await _mopidyClient.Stop();
+            await _mopidyMopidyAdapter.Stop();
         }
 
         public async Task Pause()
         {
             Console.WriteLine("Pause");
-            await _mopidyClient.Pause();
+            await _mopidyMopidyAdapter.Pause();
         }
     }
 }

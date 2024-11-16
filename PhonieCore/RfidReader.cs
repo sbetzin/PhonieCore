@@ -8,17 +8,17 @@ namespace PhonieCore
 {
     // https://www.nuget.org/packages/nanoFramework.IoT.Device.Mfrc522/
 
-    internal class RfidReader
+    internal static class RfidReader
     {
         public static event Action<string> NewCardDetected;
+        private static string _currentId = string.Empty;
 
-        public static void WaitForCard()
+        public static void DetectCards()
         {
             using var gpioController = new GpioController();
             var pinReset = 22;
-            var currentId = string.Empty;
 
-            SpiConnectionSettings connection = new(1, 0)
+            SpiConnectionSettings connection = new(0, 0)
             {
                 ClockFrequency = 1_000_000
             };
@@ -28,33 +28,31 @@ namespace PhonieCore
 
             while (true)
             {
-                currentId = DetectCard(mfrc522, currentId);
+                mfrc522.DetectCard();
             }
         }
 
-        private static string DetectCard(MfRc522 mfrc522, string currentId)
+        private static void DetectCard(this MfRc522 mfrc522)
         {
             var res = mfrc522.ListenToCardIso14443TypeA(out var card, TimeSpan.FromSeconds(2));
             if (!res)
             {
-                return currentId;
+                return;
             }
-                
-            var id = BitConverter.ToString(card.NfcId);
 
-            if (id.Equals(currentId))
+            var id = BitConverter.ToString(card.NfcId);
+            if (id.Equals(_currentId))
             {
-                return currentId;
+                return;
             }
-            currentId = id;
+
+            _currentId = id;
             OnNewCardFound(id);
 
-            Console.WriteLine(id);
             Thread.Sleep(1000);
-            return currentId;
         }
 
-        protected static void OnNewCardFound(string id)
+        private static void OnNewCardFound(string id)
         {
             NewCardDetected?.Invoke(id);
         }
