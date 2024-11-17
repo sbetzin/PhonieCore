@@ -12,20 +12,19 @@ namespace PhonieCore
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            Logger.SetLogger(logger);
+            Logger.SetLogger(_logger);
 
             cancellationToken.Register(() =>
             {
-                _logger.LogInformation("Cancel requested");
+                _logger.LogInformation("PhonieBackgroundWorker shutdown requested");
             });
 
-            await Task.Factory.StartNew(x =>
-            {
-                PhonieController.Start(cancellationToken);
-
-            }, new object(), cancellationToken);
-
             _logger.LogInformation("PhonieBackgroundWorker is running...");
+
+            await PhonieController.Run(cancellationToken);
+
+            _logger.LogInformation("PhonieBackgroundWorker is shutting down...");
+
         }
     }
 }

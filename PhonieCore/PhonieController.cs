@@ -1,19 +1,21 @@
-﻿using System.IO;
-using System.Threading;
+﻿using System.Threading;
+using System.Threading.Tasks;
 using PhonieCore.Logging;
 
 namespace PhonieCore
 {
     public static class PhonieController
     {
-        public static void Start(CancellationToken cancellationToken)
+        public static async Task Run(CancellationToken cancellationToken)
         {
             RfidReader.NewCardDetected += NewCardDetected;
 
-            Player.SetVolume(80).Wait(cancellationToken);
-            Player.Play("/media/start.mp3").Wait(cancellationToken);
+            await Player.SetVolume(50);
+            await Player.Play("/media/start.mp3");
 
-            RfidReader.DetectCards(cancellationToken);
+            await RfidReader.DetectCards(cancellationToken);
+
+            await Player.Play("/media/shutdown.mp3");
         }
 
         private static void NewCardDetected(string uid)

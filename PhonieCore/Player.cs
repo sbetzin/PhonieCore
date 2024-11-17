@@ -76,7 +76,8 @@ namespace PhonieCore
         public static async Task SetVolume(int volume)
         {
             Logger.Log($"set volumen {volume}");
-            await MopidyAdapter.SetVolume(volume);
+            _volume = volume;
+            await MopidyAdapter.SetVolume(_volume);
         }
 
         public static async Task IncreaseVolume()
