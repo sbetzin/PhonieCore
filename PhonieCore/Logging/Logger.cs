@@ -5,9 +5,9 @@ namespace PhonieCore.Logging
 {
     public static class Logger
     {
-        private static ILogger<PhonieWorker> _logger;
+        private static ILogger<PhonieBackgroundWorker> _logger;
 
-        public static void SetLogger(ILogger<PhonieWorker> logger)
+        public static void SetLogger(ILogger<PhonieBackgroundWorker> logger)
         {
             _logger = logger;
         }

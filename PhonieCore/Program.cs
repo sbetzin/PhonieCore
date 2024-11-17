@@ -17,7 +17,7 @@ namespace PhonieCore
                 .UseSystemd()
                 .ConfigureServices(services =>
                 {
-                    services.AddHostedService<PhonieWorker>();
+                    services.AddHostedService<PhonieBackgroundWorker>();
                 });       
     }    
 }

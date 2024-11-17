@@ -97,6 +97,11 @@ namespace PhonieCore
             await SetVolume(_volume);
         }
 
+        public static async Task Play(string file)
+        {
+            await Play([file]);
+        }
+
         public static async Task Play(string[] files)
         {
             var filesString = string.Join(" ", files);

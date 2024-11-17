@@ -34,7 +34,7 @@ namespace PhonieCore
             else
             {
                 var dir = Directory.CreateDirectory(targetDirectory);
-                Bash.Exec("sudo chmod 777 " + dir.FullName);
+                BashAdapter.Exec("sudo chmod 777 " + dir.FullName);
             }
 
             return targetDirectory;

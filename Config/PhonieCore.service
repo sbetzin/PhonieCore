@@ -1,0 +1,15 @@
+[Unit]
+Description=PhonieCore Service
+After=mopidy.service wm8960-soundcard.service network.target
+Requires=mopidy.service wm8960-soundcard.service
+
+[Service]
+Type=simple
+ExecStart=/usr/share/dotnet/dotnet /srv/phoniecore/PhonieCore.dll
+Restart=always
+User=root
+Group=root
+WorkingDirectory=/srv/phoniecore
+
+[Install]
+WantedBy=multi-user.target
