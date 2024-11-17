@@ -22,7 +22,7 @@ namespace PhonieCore
             using var gpioController = new GpioController();
             var pinReset = 22;
 
-            SpiConnectionSettings connection = new(0, 0)
+            SpiConnectionSettings connection = new(0, 1)
             {
                 ClockFrequency = 1_000_000
             };
