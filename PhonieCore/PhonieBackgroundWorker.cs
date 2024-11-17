@@ -19,9 +19,14 @@ namespace PhonieCore
                 _logger.LogInformation("PhonieBackgroundWorker shutdown requested");
             });
 
-            _logger.LogInformation("PhonieBackgroundWorker is running...");
+            _logger.LogInformation("PhonieBackgroundWorker is starting...");
 
-            await PhonieController.Run(cancellationToken);
+            var state = new PlayerState(0, 1, "/media/")
+            {
+                CancellationToken = cancellationToken
+            };
+
+            await PhonieController.Run(state);
 
             _logger.LogInformation("PhonieBackgroundWorker is shutting down...");
 

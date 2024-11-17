@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Device.Gpio;
 using System.Device.Spi;
-using System.Threading;
 using System.Threading.Tasks;
 using Iot.Device.Mfrc522;
 using PhonieCore.Logging;
@@ -15,14 +14,14 @@ namespace PhonieCore
         public static event Action<string> NewCardDetected;
 
 
-        public static async Task DetectCards(CancellationToken cancellationToken)
+        public static async Task DetectCards(PlayerState state)
         {
             Logger.Log("Starting NFC Reader");
 
             using var gpioController = new GpioController();
             var pinReset = 22;
 
-            SpiConnectionSettings connection = new(0, 1)
+            SpiConnectionSettings connection = new(state.BusId, state.ChipSelectLine)
             {
                 ClockFrequency = 1_000_000
             };
@@ -30,7 +29,7 @@ namespace PhonieCore
             using var spi = SpiDevice.Create(connection);
             MfRc522 mfrc522 = new(spi, pinReset, gpioController, false);
 
-            while (!cancellationToken.IsCancellationRequested)
+            while (!state.CancellationToken.IsCancellationRequested)
             {
                 mfrc522.DetectCard();
                 await Task.Delay(500);

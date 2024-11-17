@@ -6,7 +6,6 @@ namespace PhonieCore
     public class MediaAdapter
     {
         private const string MediaDirectory = "/media/";
-        private const string Marker = "---O";
 
         public static string GetFolderForId(string id)
         {
@@ -15,38 +14,22 @@ namespace PhonieCore
 
         private static string ResolveMarkedDirectory(string id)
         {
-            RemoveMarker();
-
-            var directory = SetMarkerToDirectory(id);
-
-            return directory;
+            return ResolveDirectory(id);
         }
 
-        private static string SetMarkerToDirectory(string id)
+        private static string ResolveDirectory(string id)
         {
             var directory = Path.Combine(MediaDirectory, id);
-            var targetDirectory = Path.Combine(MediaDirectory, $"{id}{Marker}");
 
             if (Directory.Exists(directory))
             {
-                Directory.Move(directory, targetDirectory);
-            }
-            else
-            {
-                var dir = Directory.CreateDirectory(targetDirectory);
-                BashAdapter.Exec("sudo chmod 777 " + dir.FullName);
+                return directory;
             }
 
-            return targetDirectory;
-        }
+            var dir = Directory.CreateDirectory(directory);
+            BashAdapter.Exec("sudo chmod 777 " + dir.FullName);
 
-        private static void RemoveMarker()
-        {
-            var markedDirectories = Directory.EnumerateDirectories(MediaDirectory).Where(directory => directory.EndsWith(Marker)).ToList();
-            foreach (var directory in markedDirectories)
-            {
-                Directory.Move(directory, directory.Replace(Marker, string.Empty).Trim());
-            }
+            return directory;
         }
     }
 }

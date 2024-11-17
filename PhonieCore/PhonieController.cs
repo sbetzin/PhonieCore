@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using PhonieCore.Logging;
@@ -10,20 +9,21 @@ namespace PhonieCore
     public static class PhonieController
     {
         private static Player _player;
-        private static readonly PlayerState State = new PlayerState();
+        private static PlayerState _state;
 
-        public static async Task Run(CancellationToken cancellationToken)
+        public static async Task Run(PlayerState state)
         {
+            _state = state;
             using var modipyAdapter = new MopidyAdapter();
             modipyAdapter.MessageReceived += ModipyAdapter_MessageReceived;
             await modipyAdapter.ConnectAsync();
 
-            _player = new Player(modipyAdapter, State);
+            _player = new Player(modipyAdapter, _state);
             await _player.SetVolume(50);
             await _player.Play("/media/start.mp3");
 
             RfidReader.NewCardDetected += NewCardDetected;
-            await RfidReader.DetectCards(cancellationToken);
+            await RfidReader.DetectCards( _state);
 
             await _player.Play("/media/shutdown.mp3");
             await Task.Delay(1000);
@@ -50,18 +50,18 @@ namespace PhonieCore
         {
             var volume = (int)data["volume"];
 
-            if (volume == State.Volume)
+            if (volume == _state.Volume)
             {
                 return;
             }
 
             Logger.Log($"Volume set to {volume}");
-            State.Volume = volume;
+            _state.Volume = volume;
         }
 
         private static void ResetCurrentRfidTag()
         {
-            State.PlayingTag = string.Empty;
+            _state.PlayingTag = string.Empty;
         }
 
         private static void NewCardDetected(string uid)
