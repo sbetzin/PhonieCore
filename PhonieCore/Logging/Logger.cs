@@ -17,9 +17,14 @@ namespace PhonieCore.Logging
             _logger?.LogInformation(text);
         }
 
-        public static void Error(Exception exception)
+        public static void Error(string message)
         {
-            _logger?.LogError(exception, exception.Message, new object());
+            _logger?.LogError(message);
+        }
+
+        public static void Error(string message, Exception exception)
+        {
+            _logger?.LogError(message, exception);
         }
     }
 }

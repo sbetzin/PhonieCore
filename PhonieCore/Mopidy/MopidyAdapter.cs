@@ -1,110 +1,190 @@
 ﻿using Newtonsoft.Json;
 using System;
-using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PhonieCore.Logging;
-
-// https://docs.mopidy.com/en/latest/api/core/#playback-controller
+using System.IO;
+using System.Net.WebSockets;
+using System.Text;
+using System.Threading;
+using Newtonsoft.Json.Linq;
+using PhonieCore.Mopidy.Model;
 
 namespace PhonieCore.Mopidy
 {
-    public class MopidyAdapter : IDisposable
+    public partial class MopidyAdapter : IDisposable
     {
-        private const string MopidyUrl = "http://localhost:6680/mopidy/rpc";
-        private readonly HttpClient _httpClient = new();
+        private const string MopidyWebSocketUrl = "ws://localhost:6680/mopidy/ws";
+        private readonly ClientWebSocket _webSocket = new();
+        private readonly CancellationTokenSource _cts = new();
+        private int _messageId = 0;
         private bool _disposedValue;
 
-        private async Task Call(string method, Dictionary<string, object[]> parameters)
+        public event Action<string, IDictionary<string, JToken>> MessageReceived;
+
+        public async Task ConnectAsync()
         {
-            var request = new MultiParamRequest(method, parameters);
-            await Fire(request);
+            try
+            {
+                await _webSocket.ConnectAsync(new Uri(MopidyWebSocketUrl), _cts.Token);
+                Logger.Log("Connected to Mopidy WebSocket API.");
+
+                // Start listening for messages
+                _ = Task.Run(StartListeningAsync, _cts.Token);
+            }
+            catch (Exception e)
+            {
+                Logger.Error("Could not connect to modipy websocket", e);
+                throw;
+            }
         }
 
-        private async Task Call(string method, Dictionary<string, object> parameters)
+        public async Task StartListeningAsync()
         {
-            var request = new SingleParamRequest(method, parameters);
-            await Fire(request);
+            var buffer = new ArraySegment<byte>(new byte[8192]);
+
+            try
+            {
+                while (_webSocket.State == WebSocketState.Open && !_cts.Token.IsCancellationRequested)
+                {
+                    using var ms = new MemoryStream();
+                    WebSocketReceiveResult result;
+                    do
+                    {
+                        result = await _webSocket.ReceiveAsync(buffer, _cts.Token);
+                        ms.Write(buffer.Array, buffer.Offset, result.Count);
+                    } while (!result.EndOfMessage);
+
+                    ms.Seek(0, SeekOrigin.Begin);
+                    var message = Encoding.UTF8.GetString(ms.ToArray());
+
+                    ProcessMessage(message);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Receiving was canceled
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Error while receiving data from Mopidy WebSocket.", ex);
+            }
         }
 
-        private async Task Call(string method)
+        private void ProcessMessage(string message)
         {
-            var request = new SingleParamRequest(method, null);
-            await Fire(request);
+            try
+            {
+                var jsonMessage = JsonConvert.DeserializeObject<WebSocketResponse>(message);
+
+                if (jsonMessage == null) return;
+
+                if (jsonMessage.Event != null)
+                {
+                    // It's an event from Mopidy
+                    HandleEvent(jsonMessage);
+                }
+                else if (jsonMessage.Id != null)
+                {
+                    // It's a response to one of our requests
+                    HandleResponse(jsonMessage);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("Failed to process message from Mopidy WebSocket.", ex);
+            }
         }
 
-        private async Task Fire(Request request)
+        private void HandleEvent(WebSocketResponse response)
         {
-            var setting = new JsonSerializerSettings
+            Logger.Log($"Received message: {response.Event} - {JsonConvert.SerializeObject(response.AdditionalData)}");
+
+            OnMessageReceived(response.Event, response.AdditionalData);
+        }
+
+        private void HandleResponse(WebSocketResponse response)
+        {
+            if (response.Error != null)
+            {
+                Logger.Error($"Error in response: {response.Error.Message}");
+            }
+            else
+            {
+                //Logger.Log($"Received response for request {response.Id}: {response.Result}");
+            }
+        }
+
+        private async Task SendAsync(Request request)
+        {
+            var settings = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore
             };
 
-            var json = JsonConvert.SerializeObject(request, setting);
+            var json = JsonConvert.SerializeObject(request, settings);
+            var buffer = Encoding.UTF8.GetBytes(json);
+            var segment = new ArraySegment<byte>(buffer);
 
-            var httpContent = new StringContent(json, null, "application/json");
-            if (httpContent.Headers.ContentType != null) httpContent.Headers.ContentType.CharSet = "";
+            await _webSocket.SendAsync(segment, WebSocketMessageType.Text, true, _cts.Token);
+        }
 
-            try
+        private async Task Call(string method, Dictionary<string, object> parameters = null)
+        {
+            var request = new Request
             {
-                var response = await _httpClient.PostAsync(MopidyUrl, httpContent);
-                var responseString = await response.Content.ReadAsStringAsync();
+                Jsonrpc = "2.0",
+                Id = ++_messageId,
+                Method = method,
+                Params = parameters
+            };
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    Logger.Log("Error: Mopidy request failed.");
-                    Logger.Log($"Response: {response.StatusCode}, {responseString}");
-                }
-            }
-            catch(HttpRequestException e)
-            {
-                Logger.Error(e);
-            }            
+            await SendAsync(request);
         }
 
         public async Task Stop()
         {
-            await Call("playback.stop");
+            await Call("core.playback.stop");
         }
 
         public async Task Pause()
         {
-            await Call("playback.pause");
+            await Call("core.playback.pause");
         }
 
         public async Task Play()
         {
-            await Call("playback.play");
+            await Call("core.playback.play");
         }
 
         public async Task Next()
         {
-            await Call("playback.next");
+            await Call("core.playback.next");
         }
 
         public async Task Previous()
         {
-            await Call("playback.previous");
+            await Call("core.playback.previous");
         }
 
         public async Task Seek(int sec)
         {
-            await Call("playback.seek", new Dictionary<string, object> { { "time_position", sec * 1000 } });
+            await Call("core.playback.seek", new Dictionary<string, object> { { "time_position", sec * 1000 } });
         }
 
         public async Task SetVolume(int volume)
         {
-            await Call("mixer.set_volume", new Dictionary<string, object> { { "volume",  volume } });
+            await Call("core.mixer.set_volume", new Dictionary<string, object> { { "volume", volume } });
         }
 
         public async Task AddTrack(string uri)
         {
-            await Call("tracklist.add", new Dictionary<string, object[]> { { "uris", new object[] { uri } } });
+            await Call("core.tracklist.add", new Dictionary<string, object> { { "uris", new object[] { uri } } });
         }
 
         public async Task ClearTracks()
         {
-            await Call("tracklist.clear");
+            await Call("core.tracklist.clear");
         }
 
         protected virtual void Dispose(bool disposing)
@@ -113,7 +193,9 @@ namespace PhonieCore.Mopidy
 
             if (disposing)
             {
-                _httpClient.Dispose();
+                _cts.Cancel();
+                _webSocket.Dispose();
+                _cts.Dispose();
             }
 
             _disposedValue = true;
@@ -123,6 +205,11 @@ namespace PhonieCore.Mopidy
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        protected virtual void OnMessageReceived(string eventName, IDictionary<string, JToken> data)
+        {
+            MessageReceived?.Invoke(eventName, data);
         }
     }
 }

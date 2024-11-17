@@ -6,12 +6,12 @@ using PhonieCore.Mopidy;
 
 namespace PhonieCore
 {
-    public static class Player
+    public class Player(MopidyAdapter adapter, PlayerState state)
     {
-        private static readonly MopidyAdapter MopidyAdapter = new();
-        private static int _volume = 80;
+        private readonly MopidyAdapter _adapter = adapter;
+        private readonly PlayerState _state = state;
 
-        public static async Task ProcessFolder(string uid)
+        public async Task ProcessFolder(string uid)
         {
             var folder = MediaAdapter.GetFolderForId(uid);
             var files = Directory.EnumerateFiles(folder).ToArray();
@@ -49,94 +49,96 @@ namespace PhonieCore
             }
             else if (files.Any(f => f.EndsWith("mp3")))
             {
+                if (_state.PlayingTag == uid)
+                {
+                    return;
+                }
+
+                _state.PlayingTag = uid;
                 await Play(files);
             }
         }
-
-        public static async Task Play()
+        public async Task Play()
         {
-            await MopidyAdapter.Play();
+            await _adapter.Play();
         }
 
-        public static async Task Next()
+        public async Task Next()
         {
-            await MopidyAdapter.Next();
+            await _adapter.Next();
         }
 
-        public static async Task Previous()
+        public async Task Previous()
         {
-            await MopidyAdapter.Previous();
+            await _adapter.Previous();
         }
 
-        public static async Task Seek(int sec)
+        public async Task Seek(int sec)
         {
-            await MopidyAdapter.Seek(sec);
+            await _adapter.Seek(sec);
         }
 
-        public static async Task SetVolume(int volume)
+        public async Task SetVolume(int volume)
         {
             Logger.Log($"set volumen {volume}");
-            _volume = volume;
-            await MopidyAdapter.SetVolume(_volume);
+            await _adapter.SetVolume(volume);
         }
 
-        public static async Task IncreaseVolume()
+        public async Task IncreaseVolume()
         {
-            if (_volume <= 95)
+            if (_state.Volume <= 95)
             {
-                _volume += 5;
+                await SetVolume(_state.Volume += 5);
             }
-            await SetVolume(_volume);
         }
 
-        public static async Task DecreaseVolume()
+        public async Task DecreaseVolume()
         {
-            if (_volume >= 5)
+            if (_state.Volume >= 5)
             {
-                _volume -= 5;
+                await SetVolume(_state.Volume -= 5);
             }
-            await SetVolume(_volume);
         }
 
-        public static async Task Play(string file)
+        public async Task Play(string file)
         {
             await Play([file]);
         }
 
-        public static async Task Play(string[] files)
+        public async Task Play(string[] files)
         {
             var filesString = string.Join(" ", files);
             Logger.Log("Play files: " + filesString);
 
-            await MopidyAdapter.Stop();
-            await MopidyAdapter.ClearTracks();
+            await _adapter.Stop();
+            await _adapter.ClearTracks();
             foreach (var file in files)
             {
-                await MopidyAdapter.AddTrack("file://" + file);
+                await _adapter.AddTrack("file://" + file);
             }
-            await MopidyAdapter.Play();
+            await _adapter.Play();
         }
 
-        private static async Task PlaySpotify(string uri)
+        private async Task PlaySpotify(string uri)
         {
             Logger.Log("Play Spotify: " + uri);
-                
-            await MopidyAdapter.Stop();
-            await MopidyAdapter.ClearTracks();
-            await MopidyAdapter.AddTrack(uri);
-            await MopidyAdapter.Play();
+
+            await _adapter.Stop();
+            await _adapter.ClearTracks();
+            await _adapter.AddTrack(uri);
+            await _adapter.Play();
         }
 
-        public static async Task Stop()
+        public async Task Stop()
         {
             Logger.Log("Stop");
-            await MopidyAdapter.Stop();
+            await _adapter.Stop();
         }
 
-        public static async Task Pause()
+        public async Task Pause()
         {
             Logger.Log("Pause");
-            await MopidyAdapter.Pause();
+            await _adapter.Pause();
         }
     }
 }

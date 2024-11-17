@@ -13,7 +13,7 @@ namespace PhonieCore
     internal static class RfidReader
     {
         public static event Action<string> NewCardDetected;
-        private static string _currentId = string.Empty;
+
 
         public static async Task DetectCards(CancellationToken cancellationToken)
         {
@@ -32,31 +32,23 @@ namespace PhonieCore
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                await mfrc522.DetectCard();
+                mfrc522.DetectCard();
+                await Task.Delay(500);
             }
 
             Logger.Log("Stopping NFC Reader");
         }
 
-        private static async Task  DetectCard(this MfRc522 mfrc522)
+        private static void DetectCard(this MfRc522 mfrc522)
         {
             var res = mfrc522.ListenToCardIso14443TypeA(out var card, TimeSpan.FromMilliseconds(10));
             if (!res)
             {
-                await Task.Delay(500);
                 return;
             }
 
             var id = BitConverter.ToString(card.NfcId);
-            if (id.Equals(_currentId))
-            {
-                return;
-            }
-
-            _currentId = id;
             OnNewCardFound(id);
-
-            await Task.Delay(500);
         }
 
         private static void OnNewCardFound(string id)
