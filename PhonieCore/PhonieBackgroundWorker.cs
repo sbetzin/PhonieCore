@@ -21,7 +21,7 @@ namespace PhonieCore
 
             _logger.LogInformation("PhonieBackgroundWorker is starting...");
 
-            var state = new PlayerState(0, 1, "/media/")
+            var state = new PlayerState(0, 1, "/media")
             {
                 CancellationToken = cancellationToken
             };

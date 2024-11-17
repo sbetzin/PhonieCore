@@ -6,15 +6,15 @@ using PhonieCore.Mopidy;
 
 namespace PhonieCore
 {
-    public class Player(MopidyAdapter adapter, PlayerState state)
+    public class Player(MopidyAdapter adapter, MediaAdapter mediaAdapter, PlayerState state)
     {
         private readonly MopidyAdapter _adapter = adapter;
         private readonly PlayerState _state = state;
+        private readonly MediaAdapter _mediaAdapter = mediaAdapter;
 
         public async Task ProcessFolder(string uid)
         {
-            var folder = MediaAdapter.GetFolderForId(uid);
-            var files = Directory.EnumerateFiles(folder).ToArray();
+            var files = _mediaAdapter.GetFilesForId(uid);
 
             if (files.Any(f => f.Contains("STOP")))
             {
@@ -38,11 +38,6 @@ namespace PhonieCore
             }
             else if (files.Any(f => f.Contains("SPOTIFY")))
             {
-                if (files.Length == 0)
-                {
-                    return;
-                }
-
                 var file = files.First();
                 var url = await File.ReadAllTextAsync(file);
                 await PlaySpotify(url);

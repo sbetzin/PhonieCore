@@ -18,14 +18,17 @@ namespace PhonieCore
             modipyAdapter.MessageReceived += ModipyAdapter_MessageReceived;
             await modipyAdapter.ConnectAsync();
 
-            _player = new Player(modipyAdapter, _state);
+            using var mediaAdapter = new MediaAdapter(state);
+            mediaAdapter.WaitForChanges();
+
+            _player = new Player(modipyAdapter, mediaAdapter, _state);
             await _player.SetVolume(50);
-            await _player.Play("/media/start.mp3");
+            await _player.Play($"{state.MediaFolder}/start.mp3");
 
             RfidReader.NewCardDetected += NewCardDetected;
-            await RfidReader.DetectCards( _state);
+            await RfidReader.DetectCards(_state);
 
-            await _player.Play("/media/shutdown.mp3");
+            await _player.Play($"/{state.MediaFolder}/shutdown.mp3");
             await Task.Delay(1000);
         }
 
