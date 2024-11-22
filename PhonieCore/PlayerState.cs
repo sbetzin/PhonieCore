@@ -13,6 +13,6 @@ namespace PhonieCore
         public string MediaFolder { get; set; } = mediaFolder;
         public int BusId { get; set; } = busId;
         public int ChipSelectLine { get; set; } = chipSelectLine;
-
+        public string PlaybackState { get; set; }
     }
 }

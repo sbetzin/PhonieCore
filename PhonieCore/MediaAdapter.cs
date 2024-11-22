@@ -4,10 +4,9 @@ using System.Linq;
 
 namespace PhonieCore
 {
-    public class MediaAdapter(PlayerState state) : IDisposable
+    public class MediaAdapter(PlayerState state)
     {
-        private readonly PlayerState _state = state;
-        private FileSystemWatcher _watcher;
+        private string _currentDirectory;
 
         public string[] GetFilesForId(string id)
         {
@@ -19,7 +18,7 @@ namespace PhonieCore
 
         private string GetDirectoryForId(string id)
         {
-            var directory = Path.Combine(_state.MediaFolder, id);
+            var directory = Path.Combine(state.MediaFolder, id);
 
             if (Directory.Exists(directory)) return directory;
 
@@ -31,34 +30,15 @@ namespace PhonieCore
 
         public void CreateSymlinkForId(string directory)
         {
-            var current = Path.Combine(_state.MediaFolder, "_current");
+            if (_currentDirectory == directory)
+            {
+                return;
+            }
 
-            BashAdapter.Exec(($"sudo rm {current}"));
-            BashAdapter.Exec(($"sudo ln -s {directory} {current}"));
-        }
+            _currentDirectory = directory;
+            var current = Path.Combine(state.MediaFolder, "_current");
 
-        public void WaitForChanges()
-        {
-            _watcher = new FileSystemWatcher(_state.MediaFolder);
-            _watcher.Filters.Add("*.mp3");
-            _watcher.Filters.Add("*.txt");
-            _watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
-            _watcher.IncludeSubdirectories = true;
-            _watcher.Created += Watcher_Changed;
-            _watcher.Deleted += Watcher_Changed;
-            _watcher.Renamed += Watcher_Changed;
-            _watcher.EnableRaisingEvents = true;
-        }
-
-
-        private void Watcher_Changed(object sender, FileSystemEventArgs e)
-        {
-            Logging.Logger.Log(e.FullPath);
-        }
-
-        public void Dispose()
-        {
-            _watcher?.Dispose();
+            BashAdapter.Exec(($"sudo rm {current} && sudo ln -s {directory} {current}"));
         }
     }
 }

@@ -18,8 +18,7 @@ namespace PhonieCore
             modipyAdapter.MessageReceived += ModipyAdapter_MessageReceived;
             await modipyAdapter.ConnectAsync();
 
-            using var mediaAdapter = new MediaAdapter(state);
-            mediaAdapter.WaitForChanges();
+            var mediaAdapter = new MediaAdapter(state);
 
             _player = new Player(modipyAdapter, mediaAdapter, _state);
             await _player.SetVolume(50);
@@ -34,8 +33,6 @@ namespace PhonieCore
 
         private static void ModipyAdapter_MessageReceived(string eventName, IDictionary<string, JToken> data)
         {
-            Logger.Log(eventName);
-
             switch (eventName)
             {
                 case "track_playback_ended":
@@ -46,7 +43,16 @@ namespace PhonieCore
                     CheckVolumeOnStateChanged(data);
                     break;
 
+                case "playback_state_changed":
+                    StorePlaybackState(data);
+                    break;
             }
+        }
+
+        private static void StorePlaybackState(IDictionary<string, JToken> data)
+        {
+            _state.PlaybackState = (string)data["new_state"];
+            Logger.Log($"New playback state: {_state.PlaybackState}");
         }
 
         private static void CheckVolumeOnStateChanged(IDictionary<string, JToken> data)
