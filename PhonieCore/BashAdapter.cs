@@ -24,5 +24,10 @@ namespace PhonieCore
             process.Start();
             process.WaitForExit();
         }
+
+        public static void Shutdown()
+        {
+           Exec("sudo shutdown -h now");
+        }
     }
 }

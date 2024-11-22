@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -14,5 +15,6 @@ namespace PhonieCore
         public int BusId { get; set; } = busId;
         public int ChipSelectLine { get; set; } = chipSelectLine;
         public string PlaybackState { get; set; }
+        public DateTime PlaybackStateChanged { get; set; } = DateTime.Now;
     }
 }

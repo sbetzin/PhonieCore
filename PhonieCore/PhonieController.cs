@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using PhonieCore.Logging;
@@ -24,7 +25,11 @@ namespace PhonieCore
             await _player.SetVolume(50);
             await _player.Play($"{state.MediaFolder}/start.mp3");
 
-            RfidReader.NewCardDetected += NewCardDetected;
+            var watcher = new InactivityWatcher(state);
+            watcher.Inactive += BashAdapter.Shutdown;
+            _ = Task.Run(async () => await watcher.WatchForInactivity(30));
+
+            RfidReader.NewCardDetected += async (uid) => await NewCardDetected(uid);
             await RfidReader.DetectCards(_state);
 
             await _player.Play($"/{state.MediaFolder}/shutdown.mp3");
@@ -52,6 +57,8 @@ namespace PhonieCore
         private static void StorePlaybackState(IDictionary<string, JToken> data)
         {
             _state.PlaybackState = (string)data["new_state"];
+            _state.PlaybackStateChanged = DateTime.Now;
+
             Logger.Log($"New playback state: {_state.PlaybackState}");
         }
 
@@ -73,9 +80,9 @@ namespace PhonieCore
             _state.PlayingTag = string.Empty;
         }
 
-        private static void NewCardDetected(string uid)
+        private static async Task NewCardDetected(string uid)
         {
-            _player.ProcessFolder(uid).Wait();
+            await _player.ProcessFolder(uid);
         }
     }
 }
