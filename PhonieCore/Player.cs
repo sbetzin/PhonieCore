@@ -8,13 +8,9 @@ namespace PhonieCore
 {
     public class Player(MopidyAdapter adapter, MediaAdapter mediaAdapter, PlayerState state)
     {
-        private readonly MopidyAdapter _adapter = adapter;
-        private readonly PlayerState _state = state;
-        private readonly MediaAdapter _mediaAdapter = mediaAdapter;
-
         public async Task ProcessFolder(string uid)
         {
-            var files = _mediaAdapter.GetFilesForId(uid);
+            var files = mediaAdapter.GetFilesForId(uid);
 
             if (files.Any(f => f.Contains("STOP")))
             {
@@ -44,54 +40,54 @@ namespace PhonieCore
             }
             else if (files.Any(f => f.EndsWith("mp3")))
             {
-                if (_state.PlayingTag == uid)
+                if (state.PlayingTag == uid)
                 {
                     return;
                 }
 
-                _state.PlayingTag = uid;
+                state.PlayingTag = uid;
                 await Play(files);
             }
         }
         public async Task Play()
         {
-            await _adapter.Play();
+            await adapter.Play();
         }
 
         public async Task Next()
         {
-            await _adapter.Next();
+            await adapter.Next();
         }
 
         public async Task Previous()
         {
-            await _adapter.Previous();
+            await adapter.Previous();
         }
 
         public async Task Seek(int sec)
         {
-            await _adapter.Seek(sec);
+            await adapter.Seek(sec);
         }
 
         public async Task SetVolume(int volume)
         {
             Logger.Log($"set volumen {volume}");
-            await _adapter.SetVolume(volume);
+            await adapter.SetVolume(volume);
         }
 
         public async Task IncreaseVolume()
         {
-            if (_state.Volume <= 95)
+            if (state.Volume <= 95)
             {
-                await SetVolume(_state.Volume += 5);
+                await SetVolume(state.Volume += 5);
             }
         }
 
         public async Task DecreaseVolume()
         {
-            if (_state.Volume >= 5)
+            if (state.Volume >= 5)
             {
-                await SetVolume(_state.Volume -= 5);
+                await SetVolume(state.Volume -= 5);
             }
         }
 
@@ -105,35 +101,35 @@ namespace PhonieCore
             var filesString = string.Join(" ", files);
             Logger.Log("Play files: " + filesString);
 
-            await _adapter.Stop();
-            await _adapter.ClearTracks();
+            await adapter.Stop();
+            await adapter.ClearTracks();
             foreach (var file in files)
             {
-                await _adapter.AddTrack("file://" + file);
+                await adapter.AddTrack("file://" + file);
             }
-            await _adapter.Play();
+            await adapter.Play();
         }
 
         private async Task PlaySpotify(string uri)
         {
             Logger.Log("Play Spotify: " + uri);
 
-            await _adapter.Stop();
-            await _adapter.ClearTracks();
-            await _adapter.AddTrack(uri);
-            await _adapter.Play();
+            await adapter.Stop();
+            await adapter.ClearTracks();
+            await adapter.AddTrack(uri);
+            await adapter.Play();
         }
 
         public async Task Stop()
         {
             Logger.Log("Stop");
-            await _adapter.Stop();
+            await adapter.Stop();
         }
 
         public async Task Pause()
         {
             Logger.Log("Pause");
-            await _adapter.Pause();
+            await adapter.Pause();
         }
     }
 }
