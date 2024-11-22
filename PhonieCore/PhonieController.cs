@@ -56,8 +56,8 @@ namespace PhonieCore
 
         private static void StorePlaybackState(IDictionary<string, JToken> data)
         {
-            _state.PlaybackState = (string)data["new_state"];
             _state.PlaybackStateChanged = DateTime.Now;
+            _state.PlaybackState = (string)data["new_state"];
 
             Logger.Log($"New playback state: {_state.PlaybackState}");
         }

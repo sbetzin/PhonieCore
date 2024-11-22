@@ -23,7 +23,6 @@ namespace PhonieCore
                 
                 await Task.Delay(10000);
             }
-            Logger.Log("Cancelled");
         }
 
         private void CheckForTimeout(int minutes)
