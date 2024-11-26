@@ -393,55 +393,58 @@ Web Client
 https://mopidy.com/ext/musicbox-webclient/
 
 
-# Troubleshoot Befehle
+# Troubleshooting
 
 ## Raspi Config
 ```bash
 sudo nano /boot/firmware/config.txt
 ```
 
-## Status vom Sound Shield Service
+## Status of Sound Shield Service
 ```bash
 systemctl status wm8960-soundcard.service
 ```
 
-## I2C Bus auslesen und schauen ob es Geräte daran gibt
+## Check I2C Bus for devices
 ```bash
 i2cdetect -y 1
 i2cdetect -y 2
 ```
 
-## Kernel Messages nach dem Audioshield durchsuchen
+## Look for Audioshield  messages in Kernel log
 ```bash
 dmesg | grep wm8960
 ```
 
-## Test MP3 runterladen
+## download a test MP3 
 ```bash
 wget https://www.myinstants.com/media/sounds/oh-no-no-no-tik-tok-song-sound-effect.mp3
 ```
 
-## Service neu laden
-```bash
-sudo systemctl daemon-reload
-```
-
-## Test MP3 abspielen
+## Play the test MP3
 ```bash
 mpg123  oh-no-no-no-tik-tok-song-sound-effect.mp3
 ```
 
-## Modipy restarten
+## reload the services
+```bash
+sudo systemctl daemon-reload
+```
+
+## Restart Modipy
 ```bash
 sudo systemctl restart mopidy
 ```
 
-## Journal des Services ausgeben
+## Different Methods for Journal Log
 ```bash
 journalctl -u mopidy | tail -n 50
 journalctl -u cleanshutd | tail -n 50
 journalctl -u PhonieCore -f
+```
 
+## Using mpc to control the Modipy playlist -> Test the sound playing capability without using the Phoniecore service.
+```bash
 mpc help
 mpc stop
 mpc playlist
