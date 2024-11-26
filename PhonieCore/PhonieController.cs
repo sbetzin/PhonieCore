@@ -24,11 +24,15 @@ namespace PhonieCore
             _player = new Player(modipyAdapter, mediaAdapter, _state);
             await _player.SetVolume(50);
             await _player.Play($"{state.MediaFolder}/start.mp3");
+            await Task.Delay(1000);
 
             var watcher = new InactivityWatcher(state);
             watcher.Inactive += BashAdapter.Shutdown;
             _ = Task.Run(async () => await watcher.WatchForInactivity(30));
 
+            var buttonAdapter = new ButtonAdapter(state);
+            _ = Task.Run(async () => await buttonAdapter.WatchButton());
+            
             RfidReader.NewCardDetected += async (uid) => await NewCardDetected(uid);
             await RfidReader.DetectCards(_state);
 
