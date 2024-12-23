@@ -85,7 +85,7 @@ namespace PhonieCore
 
         public async Task DecreaseVolume()
         {
-            if (state.Volume >= 5)
+            if (state.Volume >= 10)
             {
                 await SetVolume(state.Volume -= 5);
             }

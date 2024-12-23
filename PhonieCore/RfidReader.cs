@@ -16,7 +16,7 @@ namespace PhonieCore
 
         public static async Task DetectCards(PlayerState state)
         {
-            Logger.Log("Starting NFC Reader");
+            Logger.Log($"Starting NFC Reader BusId={state.BusId}, ChipSelectLine={state.ChipSelectLine}");
 
             using var gpioController = new GpioController();
             var pinReset = 22;
@@ -47,6 +47,7 @@ namespace PhonieCore
             }
 
             var id = BitConverter.ToString(card.NfcId);
+
             OnNewCardFound(id);
         }
 
