@@ -124,6 +124,7 @@ namespace PhonieCore
         {
             Logger.Log("Stop");
             await adapter.Stop();
+            state.PlayingTag = string.Empty;
         }
 
         public async Task Pause()

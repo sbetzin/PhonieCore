@@ -54,6 +54,7 @@ namespace PhonieCore
 
                 case "playback_state_changed":
                     StorePlaybackState(data);
+
                     break;
             }
         }
