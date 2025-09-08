@@ -37,7 +37,7 @@ namespace PhonieCore
             await RfidReader.DetectCards(_state);
 
             await _player.Play($"/{state.MediaFolder}/shutdown.mp3");
-            await Task.Delay(3000);
+            await Task.Delay(4000);
         }
 
         private static void ModipyAdapter_MessageReceived(string eventName, IDictionary<string, JToken> data)

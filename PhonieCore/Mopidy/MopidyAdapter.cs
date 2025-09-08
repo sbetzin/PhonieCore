@@ -9,16 +9,29 @@ using System.Text;
 using System.Threading;
 using Newtonsoft.Json.Linq;
 using PhonieCore.Mopidy.Model;
+using Polly.Retry;
+using Polly;
 
 namespace PhonieCore.Mopidy
 {
     public partial class MopidyAdapter : IDisposable
     {
         private const string MopidyWebSocketUrl = "ws://localhost:6680/mopidy/ws";
-        private readonly ClientWebSocket _webSocket = new();
+        private ClientWebSocket _webSocket = new();
         private readonly CancellationTokenSource _cts = new();
         private int _messageId = 0;
         private bool _disposedValue;
+
+        private static readonly AsyncRetryPolicy _connectRetryPolicy = Policy
+        .Handle<WebSocketException>()
+        .Or<IOException>()
+        .Or<InvalidOperationException>()
+        .WaitAndRetryAsync(
+            retryCount: 10,
+            sleepDurationProvider: attempt => TimeSpan.FromSeconds(attempt),
+            onRetry: (ex, delay, attempt, context) =>
+                Logger.Log($"Mopidy WebSocket nicht erreichbar (Versuch {attempt}), war {delay.TotalSeconds:F0}s. Fehler: {ex.Message}")
+        );
 
         public event Action<string, IDictionary<string, JToken>> MessageReceived;
 
@@ -26,7 +39,13 @@ namespace PhonieCore.Mopidy
         {
             try
             {
-                await _webSocket.ConnectAsync(new Uri(MopidyWebSocketUrl), _cts.Token);
+                Logger.Log("Connecting to Mopidy WebSocket API...");
+                await _connectRetryPolicy.ExecuteAsync(async ct =>
+                {
+                    _webSocket = new();
+                    await _webSocket.ConnectAsync(new Uri(MopidyWebSocketUrl), ct);
+                }
+                , _cts.Token);
                 Logger.Log("Connected to Mopidy WebSocket API.");
 
                 // Start listening for messages
