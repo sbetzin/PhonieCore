@@ -17,17 +17,24 @@ namespace PhonieCore
                 logger.LogInformation("PhonieBackgroundWorker shutdown requested");
             });
 
-            logger.LogInformation("PhonieBackgroundWorker is starting...");
-
+            
+            logger.LogInformation("Loading settings...");
+            var settings = await Persistance.SettingsAdapter.LoadAsync();
             var state = new PlayerState(0, 1, "/media")
             {
-                CancellationToken = cancellationToken
+                CancellationToken = cancellationToken,
+                Volume = settings.volume
             };
+            logger.LogInformation($"Settings loaded. Volume: {settings.volume}");
 
+            logger.LogInformation("PhonieBackgroundWorker is starting...");
             await PhonieController.Run(state);
 
             logger.LogInformation("PhonieBackgroundWorker is shutting down...");
 
+            settings.volume = state.Volume;
+            logger.LogInformation($"Saving Volume: {settings.volume} to settings");
+            await Persistance.SettingsAdapter.SaveAsync(settings);
         }
     }
 }

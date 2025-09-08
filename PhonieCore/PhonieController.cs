@@ -22,7 +22,7 @@ namespace PhonieCore
             var mediaAdapter = new MediaAdapter(state);
 
             _player = new Player(modipyAdapter, mediaAdapter, _state);
-            await _player.SetVolume(50);
+            await _player.SetVolume(state.Volume);
             await _player.Play($"{state.MediaFolder}/start.mp3");
             await Task.Delay(1000);
 
