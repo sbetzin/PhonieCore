@@ -1,15 +1,30 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Diagnostics;
 using PhonieCore.Logging;
 
 namespace PhonieCore
 {
-    public  class InactivityWatcher(PlayerState state)
+    public class InactivityWatcher(PlayerState state)
     {
         public event Action Inactive;
+
+        private readonly Stopwatch _idle = new Stopwatch();
+        private DateTime _lastPlaybackStateChangedSeen;
+        private bool _initialized;
+
         public async Task WatchForInactivity(int minutes)
         {
             Logger.Log($"Watching for inactivty after {minutes} minutes");
+
+            // Lazy-Init, damit wir nichts am Konstruktor ändern müssen
+            if (!_initialized)
+            {
+                _lastPlaybackStateChangedSeen = state.PlaybackStateChanged;
+                _idle.Start();
+                _initialized = true;
+            }
+
             while (!state.CancellationToken.IsCancellationRequested)
             {
                 try
@@ -20,7 +35,7 @@ namespace PhonieCore
                 {
                     Logger.Error("Watching for inactivity failed", e);
                 }
-                
+
                 await Task.Delay(10000);
             }
         }
@@ -32,12 +47,19 @@ namespace PhonieCore
                 return;
             }
 
-            if (state.PlaybackStateChanged.AddMinutes(minutes) > DateTime.Now)
+            // Wenn sich der Zustands-Timestamp geändert hat, Stoppuhr neu starten
+            if (state.PlaybackStateChanged != _lastPlaybackStateChangedSeen)
+            {
+                _lastPlaybackStateChangedSeen = state.PlaybackStateChanged;
+                if (_idle.IsRunning) _idle.Restart(); else _idle.Start();
+            }
+
+            if (_idle.Elapsed < TimeSpan.FromMinutes(minutes))
             {
                 return;
             }
-            Logging.Logger.Log("Shuting down because of inactivity");
 
+            Logging.Logger.Log("Shuting down because of inactivity");
             OnInactive();
         }
 
