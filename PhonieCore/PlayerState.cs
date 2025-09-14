@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace PhonieCore
@@ -16,5 +17,8 @@ namespace PhonieCore
         public int ChipSelectLine { get; set; } = chipSelectLine;
         public string PlaybackState { get; set; }
         public DateTime PlaybackStateChanged { get; set; } = DateTime.Now;
+        public string WebSocketUrl { get; set; }
+        public bool PCDebug { get; internal set; } = false;
+        public long NextTrackId { get; set; }
     }
 }

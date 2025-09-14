@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace PhonieCore.Mopidy.Model
@@ -12,5 +14,6 @@ namespace PhonieCore.Mopidy.Model
         [JsonProperty("method")] public string Method { get; set; }
 
         [JsonProperty("params")] public Dictionary<string, object> Params { get; set; }
+
     }
 }

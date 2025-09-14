@@ -7,9 +7,9 @@
   <ItemGroup>
     <PackageReference Include="HidSharpCore" Version="1.3.0" />
     <PackageReference Include="Iot.Device.Bindings" Version="4.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.9" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Polly" Version="8.6.3" />
     <PackageReference Include="System.Device.Gpio" Version="4.0.1" />

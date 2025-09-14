@@ -1,26 +1,28 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using PhonieCore.Logging;
+using PhonieCore.Mopidy.Model;
+using Polly;
+using Polly.Retry;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using PhonieCore.Logging;
 using System.IO;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
-using Newtonsoft.Json.Linq;
-using PhonieCore.Mopidy.Model;
-using Polly.Retry;
-using Polly;
+using System.Threading.Tasks;
+using UnitsNet;
 
 namespace PhonieCore.Mopidy
 {
-    public partial class MopidyAdapter : IDisposable
+    public class MopidyAdapter : IDisposable
     {
-        private const string MopidyWebSocketUrl = "ws://localhost:6680/mopidy/ws";
+        private string _mopidyWebSocketUrl;
         private ClientWebSocket _webSocket = new();
         private readonly CancellationTokenSource _cts = new();
         private int _messageId = 0;
         private bool _disposedValue;
+        private Dictionary<int, WebSocketResponse> _requestResponses = new();
 
         private static readonly AsyncRetryPolicy _connectRetryPolicy = Policy
         .Handle<WebSocketException>()
@@ -35,6 +37,11 @@ namespace PhonieCore.Mopidy
 
         public event Action<string, IDictionary<string, JToken>> MessageReceived;
 
+        public MopidyAdapter(string websocketurl)
+        {
+            _mopidyWebSocketUrl = websocketurl;
+        }
+
         public async Task ConnectAsync()
         {
             try
@@ -43,7 +50,7 @@ namespace PhonieCore.Mopidy
                 await _connectRetryPolicy.ExecuteAsync(async ct =>
                 {
                     _webSocket = new();
-                    await _webSocket.ConnectAsync(new Uri(MopidyWebSocketUrl), ct);
+                    await _webSocket.ConnectAsync(new Uri(_mopidyWebSocketUrl), ct);
                 }
                 , _cts.Token);
                 Logger.Log("Connected to Mopidy WebSocket API.");
@@ -130,7 +137,11 @@ namespace PhonieCore.Mopidy
             }
             else
             {
-                //Logger.Log($"Received response for request {response.Id}: {response.Result}");
+                Logger.Log($"Received response for request {response.Id}: {response.Result}");
+                if (_requestResponses.ContainsKey(response.Id.Value))
+                {
+                    _requestResponses[response.Id.Value] = response;
+                }
             }
         }
 
@@ -148,7 +159,7 @@ namespace PhonieCore.Mopidy
             await _webSocket.SendAsync(segment, WebSocketMessageType.Text, true, _cts.Token);
         }
 
-        private async Task Call(string method, Dictionary<string, object> parameters = null)
+        private async Task<Request> Call(string method, Dictionary<string, object> parameters = null)
         {
             var request = new Request
             {
@@ -159,6 +170,8 @@ namespace PhonieCore.Mopidy
             };
 
             await SendAsync(request);
+
+            return request;
         }
 
         public async Task Stop()
@@ -180,7 +193,7 @@ namespace PhonieCore.Mopidy
         {
             await Call("core.playback.next");
         }
-
+        
         public async Task Previous()
         {
             await Call("core.playback.previous");
@@ -204,6 +217,41 @@ namespace PhonieCore.Mopidy
         public async Task ClearTracks()
         {
             await Call("core.tracklist.clear");
+        }
+
+        public async Task<long> GetNextTrackId()
+        {
+            var request = await Call("core.tracklist.get_eot_tlid");
+            var response = await WaitForResponse(request);
+
+            if (response.Result == null)
+            { 
+                return 0;
+            }
+
+            var nextId = (long)response.Result;
+
+            return nextId;
+        }
+
+        internal async Task<WebSocketResponse> WaitForResponse(Request request)
+        {
+            _requestResponses.Add(request.Id, null);
+
+            while (_requestResponses[request.Id] == null)
+            {
+                await Task.Delay(50);
+            }
+
+            var response = _requestResponses[request.Id];
+            _requestResponses.Remove(request.Id);
+
+            return response;
+        }
+
+        public async Task DontRepeat()
+        {
+            await Call("core.tracklist.set_repeat", new Dictionary<string, object> { { "value", false } });
         }
 
         protected virtual void Dispose(bool disposing)

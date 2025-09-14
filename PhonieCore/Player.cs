@@ -107,6 +107,7 @@ namespace PhonieCore
             {
                 await adapter.AddTrack("file://" + file);
             }
+            await adapter.DontRepeat();
             await adapter.Play();
         }
 
