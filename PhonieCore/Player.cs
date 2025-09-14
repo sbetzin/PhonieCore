@@ -103,10 +103,9 @@ namespace PhonieCore
 
             await adapter.Stop();
             await adapter.ClearTracks();
-            foreach (var file in files)
-            {
-                await adapter.AddTrack("file://" + file);
-            }
+
+            var tracks = files.Select(file => $@"file://{file}").ToArray();
+            await adapter.AddTracks(tracks);
             await adapter.DontRepeat();
             await adapter.Play();
         }

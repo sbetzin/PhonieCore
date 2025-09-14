@@ -211,7 +211,12 @@ namespace PhonieCore.Mopidy
 
         public async Task AddTrack(string uri)
         {
-            await Call("core.tracklist.add", new Dictionary<string, object> { { "uris", new object[] { uri } } });
+            await AddTracks([uri]);
+
+        }
+        public async Task AddTracks(string[] uri)
+        {
+            await Call("core.tracklist.add", new Dictionary<string, object> { { "uris", uri } });
         }
 
         public async Task ClearTracks()

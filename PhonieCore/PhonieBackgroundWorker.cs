@@ -1,8 +1,9 @@
-﻿using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using PhonieCore.Logging;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PhonieCore
 {
@@ -17,7 +18,11 @@ namespace PhonieCore
                 logger.LogInformation("PhonieBackgroundWorker shutdown requested");
             });
 
-            var pcDebug = true;
+            var pcDebug = false;
+            if (RuntimeInformation.ProcessArchitecture != Architecture.Arm)
+            {
+                pcDebug = true;
+            }
 
             logger.LogInformation("Loading settings...");
             var settings = await Persistance.SettingsAdapter.LoadAsync();
