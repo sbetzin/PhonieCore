@@ -98,6 +98,7 @@ namespace PhonieCore
 
         public async Task Play(string[] files)
         {
+            files = files.Order().ToArray();
             var filesString = string.Join(" ", files);
             Logger.Log("Play files: " + filesString);
 

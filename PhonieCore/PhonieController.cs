@@ -16,7 +16,7 @@ namespace PhonieCore
         {
             _state = state;
             using var modipyAdapter = new MopidyAdapter(state.WebSocketUrl);
-            modipyAdapter.MessageReceived += (eventName, data) => ModipyAdapter_MessageReceivedAsync(modipyAdapter, eventName, data);
+            modipyAdapter.MessageReceived += async (eventName, data) => await ModipyAdapter_MessageReceivedAsync(modipyAdapter, eventName, data);
             await modipyAdapter.ConnectAsync();
 
             var mediaAdapter = new MediaAdapter(state);
