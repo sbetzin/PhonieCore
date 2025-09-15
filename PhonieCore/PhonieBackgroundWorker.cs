@@ -30,6 +30,7 @@ namespace PhonieCore
             {
                 CancellationToken = cancellationToken,
                 Volume = settings.volume,
+                IfName = "wlan0",
                 WebSocketUrl = @"ws://localhost:6680/mopidy/ws",
                 PCDebug = pcDebug
             };

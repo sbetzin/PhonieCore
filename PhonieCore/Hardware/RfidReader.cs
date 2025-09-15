@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Iot.Device.Mfrc522;
 using PhonieCore.Logging;
 
-namespace PhonieCore
+namespace PhonieCore.Hardware
 {
     // https://www.nuget.org/packages/nanoFramework.IoT.Device.Mfrc522/
 

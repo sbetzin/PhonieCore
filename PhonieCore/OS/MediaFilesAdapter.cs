@@ -1,10 +1,9 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 
-namespace PhonieCore
+namespace PhonieCore.OS
 {
-    public class MediaAdapter(PlayerState state)
+    public class MediaFilesAdapter(PlayerState state)
     {
         private string _currentDirectory;
 
@@ -38,7 +37,7 @@ namespace PhonieCore
             _currentDirectory = directory;
             var current = Path.Combine(state.MediaFolder, "_current");
 
-            BashAdapter.Exec(($"sudo rm {current} && sudo ln -s {directory} {current}"));
+            BashAdapter.Exec($"sudo rm {current} && sudo ln -s {directory} {current}");
         }
     }
 }

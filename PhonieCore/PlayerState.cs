@@ -20,5 +20,6 @@ namespace PhonieCore
         public string WebSocketUrl { get; set; }
         public bool PCDebug { get; internal set; } = false;
         public long NextTrackId { get; set; }
+        public string IfName { get; set; }
     }
 }

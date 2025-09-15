@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using PhonieCore.Hardware;
 using PhonieCore.Logging;
 using PhonieCore.Mopidy;
+using PhonieCore.OS;
 
 namespace PhonieCore
 {
@@ -19,7 +21,7 @@ namespace PhonieCore
             modipyAdapter.MessageReceived += async (eventName, data) => await ModipyAdapter_MessageReceivedAsync(modipyAdapter, eventName, data);
             await modipyAdapter.ConnectAsync();
 
-            var mediaAdapter = new MediaAdapter(state);
+            var mediaAdapter = new MediaFilesAdapter(state);
 
             _player = new Player(modipyAdapter, mediaAdapter, _state);
             await _player.SetVolume(state.Volume);
@@ -42,7 +44,10 @@ namespace PhonieCore
                 _ = Task.Run(async () => await watcher.WatchForInactivity(30));
 
                 var buttonAdapter = new ButtonAdapter(state);
-                _ = Task.Run(async () => await buttonAdapter.WatchButton());
+                _ = Task.Run(buttonAdapter.WatchButton);
+
+                var networkManagerAdapter = new NetworkManagerAdapter();
+                _ = Task.Run(()=> networkManagerAdapter.StartAsync(state.IfName));
 
                 RfidReader.NewCardDetected += async (uid) => await NewCardDetected(uid);
                 await RfidReader.DetectCards(_state);

@@ -3,7 +3,7 @@ using System.Device.Gpio;
 using System.Threading.Tasks;
 using PhonieCore.Logging;
 
-namespace PhonieCore
+namespace PhonieCore.Hardware
 {
     public class ButtonAdapter(PlayerState state)
     {

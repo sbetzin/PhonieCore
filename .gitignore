@@ -2,7 +2,7 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/.vs/PhonieCore
+/.vs/
 /Mfrc522/bin/Debug/netcoreapp3.0
 /Mfrc522/obj/Debug/netcoreapp3.0
 /Mfrc522/obj

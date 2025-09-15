@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace PhonieCore
+namespace PhonieCore.OS
 {
     public static class BashAdapter
     {
