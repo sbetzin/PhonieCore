@@ -1,4 +1,5 @@
 ﻿using PhonieCore.Logging;
+using PhonieCore.OS.Network.Model;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -6,14 +7,14 @@ using Tmds.DBus;
 
 namespace PhonieCore.OS
 {
-    public class NetworkManagerAdapter
+    public partial class NetworkManagerAdapter
     {
         private INetworkManager _networkManager;
         private ISettings _settings;
         private Connection _bus;
         private string _ifname;
 
-        private bool disposedValue;
+        public event Action<NetworkManagerState> NetworkStatusChanged;
 
         public async Task StartAsync(string ifname)
         {
@@ -28,7 +29,7 @@ namespace PhonieCore.OS
                 _settings = _bus.CreateProxy<ISettings>("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager/Settings");
 
                 uint state = await _networkManager.GetAsync<uint>("State");
-                Console.WriteLine($"Initial State: {state}");
+                Logger.Log($"Initial network state: {(NetworkManagerState)state}");
 
                 await _networkManager.WatchStateChangedAsync(NetworkStateChange);
             }
@@ -40,7 +41,11 @@ namespace PhonieCore.OS
 
         private void NetworkStateChange(uint newState)
         {
-            Logger.Log($"State changed: new={newState}");
+            var state = (NetworkManagerState)newState;
+
+            Logger.Log($"network state changed: {state}");
+
+            OnNetworkStatusChanged(state);
         }
 
         public async Task TryConnectAsync()
@@ -56,25 +61,32 @@ namespace PhonieCore.OS
             }
             catch (Exception e)
             {
-                Logger.Error($"Could not request a rescan: {e.Message}");
-
+                Logger.Error($"Error request a network rescan for {_ifname}: {e.Message}");
             }
         }
 
-        public async Task<ObjectPath> EnsureWifiProfileAsync(string name, string ssid, string psk, bool hidden = false)
+        public async Task EnsureWifiProfileAsync(string name, string ssid, string psk, bool hidden = false)
         {
-            var existing = await FindConnectionByIdAsync(name);
-            var settings = BuildWifiSettings(name, ssid, psk, hidden);
+            try
+            {
+                var existing = await FindConnectionByIdAsync(name);
+                var settings = BuildWifiSettings(name, ssid, psk, hidden);
 
-            if (existing == null)
-            {
-                return await _settings.AddConnectionAsync(settings);
+                if (existing == null)
+                {
+                    Logger.Log($"creating wifi profile {name} - {ssid}");
+                    await _settings.AddConnectionAsync(settings);
+                }
+                else
+                {
+                    Logger.Log($"updatting wifi profile {name} - {ssid}");
+                    var settingsConnection = _bus.CreateProxy<ISettingsConnection>("org.freedesktop.NetworkManager", existing.Value);
+                    await settingsConnection.UpdateAsync(settings);
+                }
             }
-            else
+            catch (Exception e)
             {
-                var settingsConnection = _bus.CreateProxy<ISettingsConnection>("org.freedesktop.NetworkManager", existing.Value);
-                await settingsConnection.UpdateAsync(settings);
-                return existing.Value;
+                Logger.Error($"Could not ensure wifi profile with {name}: {e.Message}");
             }
         }
 
@@ -146,62 +158,9 @@ namespace PhonieCore.OS
             return settings;
         }
 
-        // --------- Minimal nötige D-Bus Interfaces ----------
-
-        [DBusInterface("org.freedesktop.NetworkManager")]
-        public interface INetworkManager : IDBusObject
+        protected virtual void OnNetworkStatusChanged(NetworkManagerState state)
         {
-            Task<ObjectPath[]> GetDevicesAsync();
-            Task<IDisposable> WatchStateChangedAsync(Action<uint> handler);
-            Task<T> GetAsync<T>(string prop);
-            Task<NetworkManagerProperties> GetAllAsync();
-            Task SetAsync(string prop, object val);
-            Task<IDisposable> WatchPropertiesAsync(Action<PropertyChanges> handler);
-        }
-
-        [Dictionary]
-        public class NetworkManagerProperties
-        {
-            public uint State { get; set; }
-            public ObjectPath[] Devices { get; set; }
-            public ObjectPath[] ActiveConnections { get; set; }
-        }
-
-        [DBusInterface("org.freedesktop.NetworkManager.Device")]
-        public interface IDevice : IDBusObject
-        {
-            Task<T> GetAsync<T>(string prop);
-            Task<DeviceProperties> GetAllAsync();
-            Task SetAsync(string prop, object val);
-            Task<IDisposable> WatchPropertiesAsync(Action<PropertyChanges> handler);
-        }
-
-        [Dictionary]
-        public class DeviceProperties
-        {
-            public string Interface { get; set; }
-            public uint DeviceType { get; set; }
-            public uint State { get; set; }
-        }
-
-        [DBusInterface("org.freedesktop.NetworkManager.Device.Wireless")]
-        public interface IWireless : IDBusObject
-        {
-            Task RequestScanAsync(IDictionary<string, object> options);
-        }
-
-        [DBusInterface("org.freedesktop.NetworkManager.Settings")]
-        public interface ISettings : IDBusObject
-        {
-            Task<ObjectPath[]> ListConnectionsAsync();
-            Task<ObjectPath> AddConnectionAsync(IDictionary<string, IDictionary<string, object>> settings);
-        }
-
-        [DBusInterface("org.freedesktop.NetworkManager.Settings.Connection")]
-        public interface ISettingsConnection : IDBusObject
-        {
-            Task<IDictionary<string, IDictionary<string, object>>> GetSettingsAsync();
-            Task UpdateAsync(IDictionary<string, IDictionary<string, object>> settings);
+            NetworkStatusChanged?.Invoke(state);
         }
     }
 }

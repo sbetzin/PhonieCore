@@ -50,6 +50,7 @@ namespace PhonieCore
                 _ = Task.Run(async ()=> {
                     await networkManagerAdapter.StartAsync(state.IfName);
                     await networkManagerAdapter.TryConnectAsync();
+                    await networkManagerAdapter.EnsureWifiProfileAsync("generic.de Data", "generic.de Data", "surf_the_green_wave");
                     });
 
                 RfidReader.NewCardDetected += async (uid) => await NewCardDetected(uid);

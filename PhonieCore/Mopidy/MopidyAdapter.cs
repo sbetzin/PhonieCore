@@ -124,7 +124,7 @@ namespace PhonieCore.Mopidy
 
         private void HandleEvent(WebSocketResponse response)
         {
-            Logger.Log($"Received message: {response.Event} - {JsonConvert.SerializeObject(response.AdditionalData)}");
+            //Logger.Log($"Received message: {response.Event} - {JsonConvert.SerializeObject(response.AdditionalData)}");
 
             OnMessageReceived(response.Event, response.AdditionalData);
         }
@@ -135,13 +135,11 @@ namespace PhonieCore.Mopidy
             {
                 Logger.Error($"Error in response: {response.Error.Message}");
             }
-            else
+
+            //Logger.Log($"Received response for request {response.Id}: {response.Result}");
+            if (_requestResponses.ContainsKey(response.Id.Value))
             {
-                Logger.Log($"Received response for request {response.Id}: {response.Result}");
-                if (_requestResponses.ContainsKey(response.Id.Value))
-                {
-                    _requestResponses[response.Id.Value] = response;
-                }
+                _requestResponses[response.Id.Value] = response;
             }
         }
 
@@ -193,7 +191,7 @@ namespace PhonieCore.Mopidy
         {
             await Call("core.playback.next");
         }
-        
+
         public async Task Previous()
         {
             await Call("core.playback.previous");
@@ -230,7 +228,7 @@ namespace PhonieCore.Mopidy
             var response = await WaitForResponse(request);
 
             if (response.Result == null)
-            { 
+            {
                 return 0;
             }
 

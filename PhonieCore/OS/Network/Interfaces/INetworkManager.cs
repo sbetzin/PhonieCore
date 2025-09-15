@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Tmds.DBus;
 
-namespace PhonieCore.OS
+namespace PhonieCore.OS.Network.Interfaces
 {
     [DBusInterface("org.freedesktop.NetworkManager")]
     internal interface INetworkManager : IDBusObject
