@@ -47,7 +47,10 @@ namespace PhonieCore
                 _ = Task.Run(buttonAdapter.WatchButton);
 
                 var networkManagerAdapter = new NetworkManagerAdapter();
-                _ = Task.Run(()=> networkManagerAdapter.StartAsync(state.IfName));
+                _ = Task.Run(async ()=> {
+                    await networkManagerAdapter.StartAsync(state.IfName);
+                    await networkManagerAdapter.TryConnectAsync();
+                    });
 
                 RfidReader.NewCardDetected += async (uid) => await NewCardDetected(uid);
                 await RfidReader.DetectCards(_state);
