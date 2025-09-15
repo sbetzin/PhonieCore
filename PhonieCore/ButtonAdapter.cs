@@ -37,7 +37,7 @@ namespace PhonieCore
 
         private void PinChangedHandler(object sender, PinValueChangedEventArgs pinvaluechangedeventargs)
         {
-            Logger.Log($"Pin changed: {pinvaluechangedeventargs.ChangeType}");
+            Logger.Log($"Pin changed: {pinvaluechangedeventargs.PinNumber} - {pinvaluechangedeventargs.ChangeType}");
         }
     }
 }
