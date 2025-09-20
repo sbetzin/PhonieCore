@@ -43,7 +43,15 @@ namespace PhonieCore
             }
 
             logger.LogInformation("PhonieBackgroundWorker is starting...");
-            await PhonieController.Run(state);
+            try
+            {
+                await PhonieController.Run(state);
+            }
+            catch (System.Exception e)
+            {
+                Logger.Log(e.ToString());
+            }
+            
 
             logger.LogInformation("PhonieBackgroundWorker is shutting down...");
 

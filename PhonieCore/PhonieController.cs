@@ -1,51 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Device.Gpio;
+using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using PhonieCore.Hardware;
 using PhonieCore.Logging;
 using PhonieCore.Mopidy;
 using PhonieCore.OS;
+using PhonieCore.OS.Audio;
 
 namespace PhonieCore
 {
     public static class PhonieController
     {
-        private static Player _player;
+        private static MopidyPlayer _mopidyPlayer;
         private static PlayerState _state;
 
         public static async Task Run(PlayerState state)
         {
             _state = state;
+          
             using var modipyAdapter = new MopidyAdapter(state.WebSocketUrl);
             modipyAdapter.MessageReceived += async (eventName, data) => await ModipyAdapter_MessageReceivedAsync(modipyAdapter, eventName, data);
             await modipyAdapter.ConnectAsync();
 
             var mediaAdapter = new MediaFilesAdapter(state);
-
-            _player = new Player(modipyAdapter, mediaAdapter, _state);
-            await _player.SetVolume(state.Volume);
-            await _player.Play($"{state.MediaFolder}/start.mp3");
-            await Task.Delay(5000);
+            _mopidyPlayer = new MopidyPlayer(modipyAdapter, mediaAdapter, _state);
+            await _mopidyPlayer.SetVolume(state.Volume);
 
             var watcher = new InactivityWatcher(state);
             watcher.Inactive += BashAdapter.Shutdown;
 
-            if (state.PCDebug)
-            {
-                // IN PC Debug Mode wait here because we dont initiate the rfid reader and button connections
-                while (!state.CancellationToken.IsCancellationRequested)
-                {
-                    await Task.Delay(100);
-                }
-            }
-            else
+            using var audioPlayer = new AudioPlayer();
+            await audioPlayer.PlayAsync("start.wav", false, state.Volume);
+
+            // We connect the hardware only if not PCDebug
+            if (!state.PCDebug)
             {
                 _ = Task.Run(async () => await watcher.WatchForInactivity(30));
-
-                var buttonAdapter = new ButtonAdapter(state);
-                _ = Task.Run(() => buttonAdapter.WatchButton(PinMode.InputPullUp, 26));
 
                 var networkManagerAdapter = new NetworkManagerAdapter();
                 _ = Task.Run(async () =>
@@ -54,12 +47,32 @@ namespace PhonieCore
                     //await networkManagerAdapter.EnsureWifiProfileAsync("generic.de Data", "generic.de Data", "surf_the_green_wave");
                 });
 
-                RfidReader.NewCardDetected += async (uid) => await NewCardDetected(uid);
-                await RfidReader.DetectCards(_state);
+                _ = Task.Run(async () =>
+                {
+                    await GpioButton.RunAsync(26, PinMode.InputPullUp, TimeSpan.FromMilliseconds(100), false,
+
+                    onPressed: async () =>
+                    {
+                        Logger.Log("Button PRESSED");
+                        await networkManagerAdapter.TryConnectAsync();
+                    },
+                    onReleased: () => Logger.Log("Button RELEASED"),
+                    state.CancellationToken);
+                });
+
+                _ = Task.Run(async () =>
+                {
+                    RfidReader.NewCardDetected += async (uid) => await NewCardDetected(uid);
+                    await RfidReader.DetectCards(_state);
+                });
             }
 
-            await _player.Play($"/{state.MediaFolder}/shutdown.mp3");
-            await Task.Delay(4000);
+            while (!state.CancellationToken.IsCancellationRequested)
+            {
+                await Task.Delay(500);
+            }
+
+            await audioPlayer.PlayAsync("shutdown.wav", true, state.Volume);
         }
 
         private static async Task ModipyAdapter_MessageReceivedAsync(MopidyAdapter mopidyAdapter, string eventName, IDictionary<string, JToken> data)
@@ -117,7 +130,7 @@ namespace PhonieCore
 
         private static async Task NewCardDetected(string uid)
         {
-            await _player.ProcessFolder(uid);
+            await _mopidyPlayer.ProcessFolder(uid);
         }
     }
 }

@@ -6,7 +6,7 @@ using PhonieCore.OS;
 
 namespace PhonieCore.Mopidy
 {
-    public class Player(MopidyAdapter adapter, MediaFilesAdapter mediaAdapter, PlayerState state)
+    public class MopidyPlayer(MopidyAdapter adapter, MediaFilesAdapter mediaAdapter, PlayerState state)
     {
         public async Task ProcessFolder(string uid)
         {

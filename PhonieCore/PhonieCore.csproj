@@ -10,14 +10,29 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="9.0.9" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="OpenAI" Version="2.4.0" />
     <PackageReference Include="Polly" Version="8.6.3" />
+    <PackageReference Include="SoundFlow" Version="1.2.1" />
     <PackageReference Include="System.Device.Gpio" Version="4.0.1" />
     <PackageReference Include="System.Reactive" Version="6.0.2" />
     <PackageReference Include="Tmds.DBus" Version="0.21.2" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="mp3\shutdown.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="mp3\start.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="sounds\shutdown.wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="sounds\start.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
