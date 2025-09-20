@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Device.Gpio;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using PhonieCore.Hardware;
@@ -44,14 +45,14 @@ namespace PhonieCore
                 _ = Task.Run(async () => await watcher.WatchForInactivity(30));
 
                 var buttonAdapter = new ButtonAdapter(state);
-                _ = Task.Run(buttonAdapter.WatchButton);
+                _ = Task.Run(() => buttonAdapter.WatchButton(PinMode.InputPullUp, 26));
 
                 var networkManagerAdapter = new NetworkManagerAdapter();
-                _ = Task.Run(async ()=> {
+                _ = Task.Run(async () =>
+                {
                     await networkManagerAdapter.StartAsync(state.IfName);
-                    await networkManagerAdapter.TryConnectAsync();
-                    await networkManagerAdapter.EnsureWifiProfileAsync("generic.de Data", "generic.de Data", "surf_the_green_wave");
-                    });
+                    //await networkManagerAdapter.EnsureWifiProfileAsync("generic.de Data", "generic.de Data", "surf_the_green_wave");
+                });
 
                 RfidReader.NewCardDetected += async (uid) => await NewCardDetected(uid);
                 await RfidReader.DetectCards(_state);
@@ -69,8 +70,7 @@ namespace PhonieCore
                     _state.NextTrackId = await mopidyAdapter.GetNextTrackId().ConfigureAwait(false);
                     break;
                 case "track_playback_ended":
-
-                    Logger.Log($"track_playback_ended {data}");
+                    Logger.Log($"track_playback_ended");
                     if (_state.NextTrackId == 0)
                     {
                         Logger.Log("No next Track Id. Resetting rfid tag");

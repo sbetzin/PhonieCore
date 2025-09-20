@@ -7,16 +7,13 @@ namespace PhonieCore.Hardware
 {
     public class ButtonAdapter(PlayerState state)
     {
-        public async Task WatchButton()
+        public async Task WatchButton(PinMode pinmode, int pinNumber)
         {
             try
             {
                 Logger.Log("Start Button Watcher");
                 var controller = new GpioController();
-
-                // GPIO 26 als Eingang mit internem Pull-Down-Widerstand öffnen
-                var pinNumber = 26;
-                controller.OpenPin(pinNumber, PinMode.InputPullDown);
+                controller.OpenPin(pinNumber, pinmode);
 
                 controller.RegisterCallbackForPinValueChangedEvent(
                     pinNumber,
