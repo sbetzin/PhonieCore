@@ -26,6 +26,7 @@ namespace PhonieCore
             await modipyAdapter.ConnectAsync();
 
             _playerController = new PlayerController(modipyAdapter, mediaAdapter, audioPlayer, _state);
+            _playerController.Startup();
             await _playerController.SetVolume(state.Volume);
 
             var watcher = new InactivityWatcher(state);
@@ -68,14 +69,19 @@ namespace PhonieCore
 
         public static async void NetworkConnectionChanged(NetworkManagerState state)
         {
-            if (state == NetworkManagerState.Disconnected) await _playerController.PlaySystemSoundAsync(SystemSounds.Disconnected, true);
-            if (state == NetworkManagerState.ConnectedGlobal) await _playerController.PlaySystemSoundAsync(SystemSounds.Internet, true);
+            if (state == NetworkManagerState.Disconnected) await _playerController.PlaySystemSoundAsync(SystemSounds.InternetDisconnected, true);
+            if (state == NetworkManagerState.ConnectedGlobal) await _playerController.PlaySystemSoundAsync(SystemSounds.InternetConnected, true);
         }
 
         public static async void ButtonPressed()
         {
             Logger.Log("Button PRESSED");
-            await _networkManagerAdapter.TryConnectAsync();
+            if (_networkManagerAdapter.CurrentState != NetworkManagerState.ConnectedGlobal)
+            {
+                await _playerController.PlaySystemSoundAsync(SystemSounds.NoInternet, true);
+                await _networkManagerAdapter.TryConnectAsync();
+            }
+           
         }
 
         public static async void ButtonReleased()
