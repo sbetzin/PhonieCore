@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PhonieCore.OS
 {
@@ -37,7 +38,7 @@ namespace PhonieCore.OS
             _currentDirectory = directory;
             var current = Path.Combine(state.MediaFolder, "_current");
 
-            BashAdapter.Exec($"sudo rm {current} && sudo ln -s {directory} {current}");
+            Task.Run(() => BashAdapter.Exec($"sudo rm {current} && sudo ln -s {directory} {current}"));
         }
     }
 }

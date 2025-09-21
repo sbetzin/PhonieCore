@@ -40,7 +40,7 @@ namespace PhonieCore.OS.Audio
         {
             var filePath = GetExecutingAssemblyDirectory(fileName);
 
-            Logger.Log($"playing system sound {filePath}");
+            //Logger.Log($"playing system sound {filePath}");
 
             var task = Task.Run(async () =>
             {
@@ -80,7 +80,7 @@ namespace PhonieCore.OS.Audio
 
             try { _playback.MasterMixer.RemoveComponent(player); } catch { }
 
-            Logger.Log($"Finished playing {filePath}");
+            //Logger.Log($"Finished playing {filePath}");
         }
 
         private static string GetExecutingAssemblyDirectory(string mp3File)
