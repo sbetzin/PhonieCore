@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Device.Gpio;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using PhonieCore.Hardware;
 using PhonieCore.Logging;
 using PhonieCore.Mopidy;
@@ -23,8 +21,6 @@ namespace PhonieCore
             using var modipyAdapter = new MopidyAdapter(state.WebSocketUrl);
             using var audioPlayer = new AudioPlayer();
             var mediaAdapter = new MediaFilesAdapter(state);
-
-            modipyAdapter.MessageReceived += async (eventName, data) => await ModipyAdapter_MessageReceivedAsync(modipyAdapter, eventName, data);
             await modipyAdapter.ConnectAsync();
 
             _playerController = new PlayerController(modipyAdapter, mediaAdapter, audioPlayer, _state);
@@ -60,7 +56,7 @@ namespace PhonieCore
 
                 _ = Task.Run(async () =>
                 {
-                    RfidReader.NewCardDetected += async (uid) => await NewCardDetected(uid);
+                    RfidReader.NewCardDetected += async (uid) => await _playerController.ProcessFolder(uid);
                     await RfidReader.DetectCards(_state);
                 });
             }
@@ -75,62 +71,5 @@ namespace PhonieCore
             await _playerController.PlaySystemSoundAsync(SystemSounds.Shutdown, true);
         }
 
-        private static async Task ModipyAdapter_MessageReceivedAsync(MopidyAdapter mopidyAdapter, string eventName, IDictionary<string, JToken> data)
-        {
-            switch (eventName)
-            {
-                case "track_playback_started":
-                    _state.NextTrackId = await mopidyAdapter.GetNextTrackId().ConfigureAwait(false);
-                    break;
-                case "track_playback_ended":
-                    Logger.Log($"track_playback_ended");
-                    if (_state.NextTrackId == 0)
-                    {
-                        Logger.Log("No next Track Id. Resetting rfid tag");
-                        ResetCurrentRfidTag();
-                    }
-                    break;
-
-                case "volume_changed":
-                    CheckVolumeOnStateChanged(data);
-                    break;
-
-                case "playback_state_changed":
-                    StorePlaybackState(data);
-
-                    break;
-            }
-        }
-
-        private static void StorePlaybackState(IDictionary<string, JToken> data)
-        {
-            _state.PlaybackStateChanged = DateTime.Now;
-            _state.PlaybackState = (string)data["new_state"];
-
-            Logger.Log($"New playback state: {_state.PlaybackState}");
-        }
-
-        private static void CheckVolumeOnStateChanged(IDictionary<string, JToken> data)
-        {
-            var volume = (int)data["volume"];
-
-            if (volume == _state.Volume)
-            {
-                return;
-            }
-
-            Logger.Log($"Volume set to {volume}");
-            _state.Volume = volume;
-        }
-
-        private static void ResetCurrentRfidTag()
-        {
-            _state.PlayingTag = string.Empty;
-        }
-
-        private static async Task NewCardDetected(string uid)
-        {
-            await _playerController.ProcessFolder(uid);
-        }
     }
 }

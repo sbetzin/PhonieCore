@@ -1,15 +1,23 @@
-﻿using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Newtonsoft.Json.Linq;
 using PhonieCore.Logging;
 using PhonieCore.Mopidy;
 using PhonieCore.OS;
 using PhonieCore.OS.Audio;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace PhonieCore
 {
     public class PlayerController(MopidyAdapter adapter, MediaFilesAdapter mediaAdapter, AudioPlayer systemSounds, PlayerState state)
     {
+        public void Startup()
+        {
+            adapter.MessageReceived += async (eventName, data) => await ModipyAdapter_MessageReceivedAsync(eventName, data);
+        }
+
         public async Task PlaySystemSoundAsync(string sound, bool wait)
         {
             await systemSounds.PlayAsync(sound, wait, state.Volume);
@@ -141,6 +149,59 @@ namespace PhonieCore
         {
             Logger.Log("Pause");
             await adapter.Pause();
+        }
+
+        private async Task ModipyAdapter_MessageReceivedAsync(string eventName, IDictionary<string, JToken> data)
+        {
+            switch (eventName)
+            {
+                case "track_playback_started":
+                    state.NextTrackId = await adapter.GetNextTrackId().ConfigureAwait(false);
+                    break;
+                case "track_playback_ended":
+                    Logger.Log($"track_playback_ended");
+                    if (state.NextTrackId == 0)
+                    {
+                        Logger.Log("No next Track Id. Resetting rfid tag");
+                        ResetCurrentRfidTag();
+                    }
+                    break;
+
+                case "volume_changed":
+                    CheckVolumeOnStateChanged(data);
+                    break;
+
+                case "playback_state_changed":
+                    StorePlaybackState(data);
+
+                    break;
+            }
+        }
+
+        private  void StorePlaybackState(IDictionary<string, JToken> data)
+        {
+            state.PlaybackStateChanged = DateTime.Now;
+            state.PlaybackState = (string)data["new_state"];
+
+            Logger.Log($"New playback state: {state.PlaybackState}");
+        }
+
+        private void CheckVolumeOnStateChanged(IDictionary<string, JToken> data)
+        {
+            var volume = (int)data["volume"];
+
+            if (volume == state.Volume)
+            {
+                return;
+            }
+
+            Logger.Log($"Volume set to {volume}");
+            state.Volume = volume;
+        }
+
+        private void ResetCurrentRfidTag()
+        {
+            state.PlayingTag = string.Empty;
         }
     }
 }

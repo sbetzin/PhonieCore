@@ -32,7 +32,7 @@ namespace PhonieCore.Hardware
             while (!state.CancellationToken.IsCancellationRequested)
             {
                 mfrc522.DetectCard();
-                await Task.Delay(500);
+                await Task.Delay(100);
             }
 
             Logger.Log("Stopping NFC Reader");

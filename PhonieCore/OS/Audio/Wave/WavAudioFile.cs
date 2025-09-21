@@ -2,6 +2,9 @@
 using System;
 using System.IO;
 
+// Original File From
+// github.com/aymen157/WavAudioFile
+
 namespace PhonieCore.OS.Audio.Wave
 {
 
