@@ -1,5 +1,5 @@
-﻿using NAudio.Wave;
-using PhonieCore.Logging;
+﻿using PhonieCore.Logging;
+using PhonieCore.OS.Audio.Wave;
 using SoundFlow.Abstracts.Devices;
 using SoundFlow.Backends.MiniAudio;
 using SoundFlow.Components;
@@ -62,16 +62,14 @@ namespace PhonieCore.OS.Audio
         {
             var finished = false;
 
-            byte[] wav = File.ReadAllBytes(filePath);
-            int idx = Array.IndexOf(wav, (byte)'d') - 4; // find "data" chunk durch Byte-Vergleich
-            byte[] pcm = wav.Skip(idx).ToArray();
-            using var stream = new MemoryStream(pcm);
+            var file = WavAudioFile.Parse(File.ReadAllBytes(filePath));
+            using var stream = new MemoryStream(file.Data);
             using var rawProvider = new RawDataProvider(stream, _deviceFormat.Format, _deviceFormat.SampleRate, _deviceFormat.Channels);
 
             using var player = new SoundPlayer(_engine, _deviceFormat, rawProvider);
 
             player.Volume = Math.Clamp(volume / 100f, 0f, 1f);
-            player.PlaybackEnded  += (_, __) => { finished = true; };
+            player.PlaybackEnded += (_, __) => { finished = true; };
             _playback.MasterMixer.AddComponent(player);
             player.Play();
 

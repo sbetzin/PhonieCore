@@ -2,12 +2,19 @@
 using System.Linq;
 using System.Threading.Tasks;
 using PhonieCore.Logging;
+using PhonieCore.Mopidy;
 using PhonieCore.OS;
+using PhonieCore.OS.Audio;
 
-namespace PhonieCore.Mopidy
+namespace PhonieCore
 {
-    public class MopidyPlayer(MopidyAdapter adapter, MediaFilesAdapter mediaAdapter, PlayerState state)
+    public class PlayerController(MopidyAdapter adapter, MediaFilesAdapter mediaAdapter, AudioPlayer systemSounds, PlayerState state)
     {
+        public async Task PlaySystemSoundAsync(string sound, bool wait)
+        {
+            await systemSounds.PlayAsync(sound, wait, state.Volume);
+        }
+
         public async Task ProcessFolder(string uid)
         {
             var files = mediaAdapter.GetFilesForId(uid);
@@ -80,6 +87,7 @@ namespace PhonieCore.Mopidy
             if (state.Volume <= 95)
             {
                 await SetVolume(state.Volume += 5);
+                await systemSounds.PlayAsync(SystemSounds.Click, false, state.Volume);
             }
         }
 
@@ -88,6 +96,7 @@ namespace PhonieCore.Mopidy
             if (state.Volume >= 10)
             {
                 await SetVolume(state.Volume -= 5);
+                await systemSounds.PlayAsync(SystemSounds.Click, false, state.Volume);
             }
         }
 

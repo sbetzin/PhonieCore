@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Device.Gpio;
-using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using PhonieCore.Hardware;
@@ -14,7 +13,7 @@ namespace PhonieCore
 {
     public static class PhonieController
     {
-        private static MopidyPlayer _mopidyPlayer;
+        private static PlayerController _playerController;
         private static PlayerState _state;
 
         public static async Task Run(PlayerState state)
@@ -22,18 +21,17 @@ namespace PhonieCore
             _state = state;
           
             using var modipyAdapter = new MopidyAdapter(state.WebSocketUrl);
+            using var audioPlayer = new AudioPlayer();
+            var mediaAdapter = new MediaFilesAdapter(state);
+
             modipyAdapter.MessageReceived += async (eventName, data) => await ModipyAdapter_MessageReceivedAsync(modipyAdapter, eventName, data);
             await modipyAdapter.ConnectAsync();
 
-            var mediaAdapter = new MediaFilesAdapter(state);
-            _mopidyPlayer = new MopidyPlayer(modipyAdapter, mediaAdapter, _state);
-            await _mopidyPlayer.SetVolume(state.Volume);
+            _playerController = new PlayerController(modipyAdapter, mediaAdapter, audioPlayer, _state);
+            await _playerController.SetVolume(state.Volume);
 
             var watcher = new InactivityWatcher(state);
             watcher.Inactive += BashAdapter.Shutdown;
-
-            using var audioPlayer = new AudioPlayer();
-            await audioPlayer.PlayAsync("start.wav", false, state.Volume);
 
             // We connect the hardware only if not PCDebug
             if (!state.PCDebug)
@@ -67,12 +65,14 @@ namespace PhonieCore
                 });
             }
 
+            await _playerController.PlaySystemSoundAsync(SystemSounds.Startup, true);
+
             while (!state.CancellationToken.IsCancellationRequested)
             {
                 await Task.Delay(500);
             }
 
-            await audioPlayer.PlayAsync("shutdown.wav", true, state.Volume);
+            await _playerController.PlaySystemSoundAsync(SystemSounds.Shutdown, true);
         }
 
         private static async Task ModipyAdapter_MessageReceivedAsync(MopidyAdapter mopidyAdapter, string eventName, IDictionary<string, JToken> data)
@@ -130,7 +130,7 @@ namespace PhonieCore
 
         private static async Task NewCardDetected(string uid)
         {
-            await _mopidyPlayer.ProcessFolder(uid);
+            await _playerController.ProcessFolder(uid);
         }
     }
 }
