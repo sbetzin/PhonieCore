@@ -23,7 +23,7 @@ namespace PhonieCore.OS
             if (Directory.Exists(directory)) return directory;
 
             var dir = Directory.CreateDirectory(directory);
-            BashAdapter.Exec("sudo chmod 777 " + dir.FullName);
+            BashAdapter.Exec("chmod 777 " + dir.FullName);
 
             return directory;
         }
@@ -38,7 +38,7 @@ namespace PhonieCore.OS
             _currentDirectory = directory;
             var current = Path.Combine(state.MediaFolder, "_current");
 
-            Task.Run(() => BashAdapter.Exec($"sudo rm {current} && sudo ln -s {directory} {current}"));
+            Task.Run(() => BashAdapter.Exec($"rm {current} && ln -s {directory} {current}"));
         }
     }
 }

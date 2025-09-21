@@ -26,32 +26,36 @@ namespace PhonieCore
         public async Task ProcessFolder(string uid)
         {
             var files = mediaAdapter.GetFilesForId(uid);
+            if (files.Length == 0)
+            {
+                return;
+            }
 
-            if (files.Any(f => f.Contains("STOP")))
+            if (files.First().Contains("STOP"))
             {
-                await Stop();
+                await StopAsync();
             }
-            else if (files.Any(f => f.Contains("PLAY")))
+            else if (files.First().Contains("PLAY"))
             {
-                await Play();
+                await PlayAsync();
             }
-            else if (files.Any(f => f.Contains("PAUSE")))
+            else if (files.First().Contains("PAUSE"))
             {
-                await Pause();
+                await PauseAsync();
             }
-            else if (files.Any(f => f.Contains("INCREASE_VOLUME")))
+            else if (files.First().Contains("INCREASE_VOLUME"))
             {
                 await IncreaseVolume();
             }
-            else if (files.Any(f => f.Contains("DECREASE_VOLUME")))
+            else if (files.First().Contains("DECREASE_VOLUME"))
             {
                 await DecreaseVolume();
             }
-            else if (files.Any(f => f.Contains("SPOTIFY")))
+            else if (files.First().Contains("SPOTIFY"))
             {
                 var file = files.First();
                 var url = await File.ReadAllTextAsync(file);
-                await PlaySpotify(url);
+                await PlaySpotifyAsync(url);
             }
             else if (files.Any(f => f.EndsWith("mp3")))
             {
@@ -60,13 +64,10 @@ namespace PhonieCore
                     return;
                 }
 
+                var mp3Files = files.Where(f => f.EndsWith("mp3")).ToArray();
                 state.PlayingTag = uid;
-                await Play(files);
+                await PlayAsync(mp3Files);
             }
-        }
-        public async Task Play()
-        {
-            await adapter.Play();
         }
 
         public async Task Next()
@@ -108,47 +109,60 @@ namespace PhonieCore
             }
         }
 
-        public async Task Play(string file)
+        public async Task PlayAsync(string file)
         {
-            await Play([file]);
+            await PlayAsync([file]);
         }
 
-        public async Task Play(string[] files)
+        public async Task PlayAsync(string[] files)
         {
             files = files.Order().ToArray();
             var filesString = string.Join(" ", files);
             Logger.Log("Play files: " + filesString);
 
-            await adapter.Stop();
-            await adapter.ClearTracks();
+            await adapter.StopAsync();
+            await adapter.ClearTracksAsync();
 
             var tracks = files.Select(file => $@"file://{file}").ToArray();
             await adapter.AddTracks(tracks);
             await adapter.DontRepeat();
-            await adapter.Play();
+            await adapter.PlayAsync();
         }
 
-        private async Task PlaySpotify(string uri)
+        private async Task PlaySpotifyAsync(string uri)
         {
             Logger.Log("Play Spotify: " + uri);
 
-            await adapter.Stop();
-            await adapter.ClearTracks();
-            await adapter.AddTrack(uri);
-            await adapter.Play();
+            await adapter.StopAsync();
+            await adapter.ClearTracksAsync();
+            await adapter.AddTrackAsync(uri);
+            await adapter.PlayAsync();
         }
 
-        public async Task Stop()
+        public async Task PlayAsync()
         {
-            Logger.Log("Stop");
-            await adapter.Stop();
-            state.PlayingTag = string.Empty;
+            if (state.PlaybackState == "paused" || state.PlaybackState == "stopped")
+            {
+                await adapter.PlayAsync();
+            }
         }
 
-        public async Task Pause()
+        public async Task StopAsync()
         {
-            Logger.Log("Pause");
-            await adapter.Pause();
+            if (state.PlaybackState == "playing" || state.PlaybackState == "paused")
+            {
+                await adapter.StopAsync();
+                ResetCurrentRfidTag();
+            }
+        }
+
+        public async Task PauseAsync()
+        {
+            if (state.PlaybackState == "playing")
+            {
+                await adapter.PauseAsync();
+            }
+
         }
 
         private async Task ModipyAdapter_MessageReceivedAsync(string eventName, IDictionary<string, JToken> data)
@@ -178,7 +192,7 @@ namespace PhonieCore
             }
         }
 
-        private  void StorePlaybackState(IDictionary<string, JToken> data)
+        private void StorePlaybackState(IDictionary<string, JToken> data)
         {
             state.PlaybackStateChanged = DateTime.Now;
             state.PlaybackState = (string)data["new_state"];

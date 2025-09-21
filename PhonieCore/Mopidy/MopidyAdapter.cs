@@ -159,6 +159,8 @@ namespace PhonieCore.Mopidy
 
         private async Task<Request> Call(string method, Dictionary<string, object> parameters = null)
         {
+            if (_messageId == int.MaxValue) _messageId = 0;
+
             var request = new Request
             {
                 Jsonrpc = "2.0",
@@ -172,54 +174,64 @@ namespace PhonieCore.Mopidy
             return request;
         }
 
-        public async Task Stop()
+        public async Task StopAsync()
         {
-            await Call("core.playback.stop");
+            var request = await Call("core.playback.stop");
+            _ = await WaitForResponse(request);
         }
 
-        public async Task Pause()
+        public async Task PauseAsync()
         {
-            await Call("core.playback.pause");
+            var request = await Call("core.playback.pause");
+            _ = await WaitForResponse(request);
         }
 
-        public async Task Play()
+        public async Task PlayAsync()
         {
-            await Call("core.playback.play");
+            var request = await Call("core.playback.play");
+            _ = await WaitForResponse(request);
         }
 
         public async Task Next()
         {
-            await Call("core.playback.next");
+            var request = await Call("core.playback.next");
+            _ = await WaitForResponse(request);
         }
 
         public async Task Previous()
         {
-            await Call("core.playback.previous");
+            var request = await Call("core.playback.previous");
+            _ = await WaitForResponse(request);
         }
 
         public async Task Seek(int sec)
         {
-            await Call("core.playback.seek", new Dictionary<string, object> { { "time_position", sec * 1000 } });
+            var request = await Call("core.playback.seek", new Dictionary<string, object> { { "time_position", sec * 1000 } });
+            _ = await WaitForResponse(request);
         }
 
         public async Task SetVolume(int volume)
         {
-            await Call("core.mixer.set_volume", new Dictionary<string, object> { { "volume", volume } });
+            var request = await Call("core.mixer.set_volume", new Dictionary<string, object> { { "volume", volume } });
+            _ = await WaitForResponse(request);
         }
 
-        public async Task AddTrack(string uri)
+        public async Task AddTrackAsync(string uri)
         {
-            await AddTracks([uri]);
-
+            _ = await AddTracks([uri]);
         }
-        public async Task AddTracks(string[] uri)
+        public async Task<WebSocketResponse> AddTracks(string[] uri)
         {
-            await Call("core.tracklist.add", new Dictionary<string, object> { { "uris", uri } });
+            var request = await Call("core.tracklist.add", new Dictionary<string, object> { { "uris", uri } });
+            var response = await WaitForResponse(request);
+
+            return response;
         }
 
-        public async Task ClearTracks()
+        public async Task ClearTracksAsync()
         {
-            await Call("core.tracklist.clear");
+            var request = await Call("core.tracklist.clear");
+            _ = await WaitForResponse(request);
         }
 
         public async Task<long> GetNextTrackId()
@@ -257,6 +269,11 @@ namespace PhonieCore.Mopidy
             await Call("core.tracklist.set_repeat", new Dictionary<string, object> { { "value", false } });
         }
 
+        protected virtual void OnMessageReceived(string eventName, IDictionary<string, JToken> data)
+        {
+            MessageReceived?.Invoke(eventName, data);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (_disposedValue) return;
@@ -275,11 +292,6 @@ namespace PhonieCore.Mopidy
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
-        }
-
-        protected virtual void OnMessageReceived(string eventName, IDictionary<string, JToken> data)
-        {
-            MessageReceived?.Invoke(eventName, data);
         }
     }
 }

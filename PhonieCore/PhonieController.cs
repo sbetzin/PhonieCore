@@ -64,6 +64,7 @@ namespace PhonieCore
                 await Task.Delay(500);
             }
 
+            await _playerController.StopAsync();
             await _playerController.PlaySystemSoundAsync(SystemSounds.Shutdown, true);
         }
 

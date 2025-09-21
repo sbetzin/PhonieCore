@@ -27,7 +27,7 @@ namespace PhonieCore.OS
 
         public static void Shutdown()
         {
-           Exec("sudo shutdown -h now");
+           Exec("shutdown -h now");
         }
     }
 }
