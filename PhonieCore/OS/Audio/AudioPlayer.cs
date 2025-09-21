@@ -35,6 +35,7 @@ namespace PhonieCore.OS.Audio
             };
             var defaultDevice = _engine.PlaybackDevices.FirstOrDefault(d => d.IsDefault);
             _playback = _engine.InitializePlaybackDevice(defaultDevice, _deviceFormat);
+            _playback.MasterMixer.Volume = 1;
 
             Console.WriteLine($"Using Playback Device: {defaultDevice.Name} - {_playback.Format.SampleRate}");
             _playback.Start();
@@ -71,8 +72,8 @@ namespace PhonieCore.OS.Audio
             using var rawProvider = new RawDataProvider(stream, _deviceFormat.Format, _deviceFormat.SampleRate, _deviceFormat.Channels);
 
             using var player = new SoundPlayer(_engine, _deviceFormat, rawProvider);
-
-            player.Volume = Math.Clamp(volume / 100f, 0f, 1f);
+            // Volume max 1 ist für die ganzen WAV irgendwie zu leise im Vergleich zu den Mopidy MP3s. Daher verdoppeln wir die Lautstärke
+            player.Volume = Math.Clamp(volume / 50f, 0f, 2f);
             player.PlaybackEnded += (_, __) => { finished = true; };
             _playback.MasterMixer.AddComponent(player);
             player.Play();
@@ -84,7 +85,7 @@ namespace PhonieCore.OS.Audio
 
             try { _playback.MasterMixer.RemoveComponent(player); } catch { }
 
-            Logger.Log($"Finished playing {filePath}");
+            //Logger.Log($"Finished playing {filePath}");
         }
 
         private static string GetFileToPlay(string mp3File)
