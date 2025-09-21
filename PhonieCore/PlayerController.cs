@@ -203,5 +203,10 @@ namespace PhonieCore
         {
             state.PlayingTag = string.Empty;
         }
+
+        internal void PlaySystemSoundAsync(object disconnected, bool v)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

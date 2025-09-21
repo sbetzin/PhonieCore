@@ -13,6 +13,7 @@ namespace PhonieCore.OS
         private ISettings _settings;
         private Connection _bus;
         private string _ifname;
+        public NetworkManagerState CurrentState;
 
         public event Action<NetworkManagerState> NetworkStatusChanged;
 
@@ -20,7 +21,7 @@ namespace PhonieCore.OS
         {
             try
             {
-                Logger.Log($"Starting Network Manager to interface {ifname}"); 
+                Logger.Log($"Starting Network Manager to interface {ifname}");
                 _ifname = ifname;
                 _bus = new Connection(Address.System);
                 await _bus.ConnectAsync();
@@ -28,8 +29,8 @@ namespace PhonieCore.OS
                 _networkManager = _bus.CreateProxy<INetworkManager>("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager");
                 _settings = _bus.CreateProxy<ISettings>("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager/Settings");
 
-                uint state = await _networkManager.GetAsync<uint>("State");
-                Logger.Log($"Initial network state: {(NetworkManagerState)state}");
+                await RefreshCurrentState();
+                Logger.Log($"Initial network state: {CurrentState}");
 
                 await _networkManager.WatchStateChangedAsync(NetworkStateChange);
             }
@@ -39,13 +40,19 @@ namespace PhonieCore.OS
             }
         }
 
+        private async Task RefreshCurrentState()
+        {
+            var state = await _networkManager.GetAsync<uint>("State");
+            CurrentState = (NetworkManagerState)state;
+        }
+
         private void NetworkStateChange(uint newState)
         {
-            var state = (NetworkManagerState)newState;
+            CurrentState = (NetworkManagerState)newState;
 
-            Logger.Log($"network state changed: {state}");
+            Logger.Log($"network state changed: {CurrentState}");
 
-            OnNetworkStatusChanged(state);
+            OnNetworkStatusChanged(CurrentState);
         }
 
         public async Task TryConnectAsync()
