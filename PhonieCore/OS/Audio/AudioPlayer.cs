@@ -10,6 +10,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PhonieCore.OS.Audio
@@ -19,6 +20,9 @@ namespace PhonieCore.OS.Audio
         private readonly MiniAudioEngine _engine;
         private readonly AudioFormat _deviceFormat;
         private readonly AudioPlaybackDevice _playback;
+
+        private static readonly Regex RangeRegex = new(@"\{(\d+)-(\d+)\}", RegexOptions.Compiled);
+        private static readonly Random _random = new();
 
         public AudioPlayer()
         {
@@ -38,7 +42,7 @@ namespace PhonieCore.OS.Audio
 
         public async Task PlayAsync(string fileName, bool wait = false, int volume = 50)
         {
-            var filePath = GetExecutingAssemblyDirectory(fileName);
+            var filePath = GetFileToPlay(fileName);
 
             //Logger.Log($"playing system sound {filePath}");
 
@@ -80,16 +84,37 @@ namespace PhonieCore.OS.Audio
 
             try { _playback.MasterMixer.RemoveComponent(player); } catch { }
 
-            //Logger.Log($"Finished playing {filePath}");
+            Logger.Log($"Finished playing {filePath}");
         }
 
-        private static string GetExecutingAssemblyDirectory(string mp3File)
+        private static string GetFileToPlay(string mp3File)
         {
+            var filename = ResolveFileRandomized(mp3File);
             var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
             var location = assembly.Location;
-            var file = Path.Combine(Path.GetDirectoryName(location) ?? "/", "sounds", mp3File);
+            var fullPath = Path.Combine(Path.GetDirectoryName(location) ?? "/", "sounds", filename);
 
-            return file;
+            return fullPath;
+        }
+
+
+        public static string ResolveFileRandomized(string fileName)
+        {
+            var match = RangeRegex.Match(fileName);
+
+            int min = 1, max = 1;
+            if (match.Success &&
+                int.TryParse(match.Groups[1].Value, out int minVal) &&
+                int.TryParse(match.Groups[2].Value, out int maxVal))
+            {
+                min = minVal;
+                max = maxVal;
+            }
+
+            int randomNum = _random.Next(min, max + 1);
+            string newFileName = RangeRegex.Replace(fileName, randomNum.ToString());
+
+            return newFileName;
         }
 
         public void Dispose()
